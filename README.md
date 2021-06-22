@@ -9,8 +9,8 @@ shared libraries in order to build these bindings.  If those are in non-standard
 locations, please use the following commands:
 
     export METISDIR=path/to/your/metis/installation
-    export CFLAGS="-I$METISDIR/include"
-    export RUSTFLAGS="-C link-arg=-L$METISDIR/lib"
+    export CPATH="$METISDIR/include"
+    export RUSTFLAGS="-L$METISDIR/lib"
 
 The environment variable `$METISDIR` must point to a directory containing a
 `lib/` and a `include/` directory containing the shared libraries and the
@@ -23,7 +23,7 @@ Once these variables are set, you can build the bindings with `cargo build`.
 If your METIS installation lies in a non-standard path, you will need to set
 the `RUSTDOCFLAGS` environment variable to build the documentation:
 
-    export RUSTDOCFLAGS="-C link-arg=-L$METISDIR/lib"
+    export RUSTDOCFLAGS="-L$METISDIR/lib"
 
 Then you can call `cargo doc --no-deps --open`.
 
