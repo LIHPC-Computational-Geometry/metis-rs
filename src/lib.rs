@@ -342,7 +342,11 @@ impl<'a> Graph<'a> {
     /// vertices.
     pub fn part_recursive(mut self, part: &mut [Idx]) -> Result<Idx> {
         let part_len = Idx::try_from(part.len()).expect("part array larger than Idx::MAX");
-        assert_eq!(part_len, self.xadj.len() as Idx - 1);
+        assert_eq!(
+            part_len,
+            self.xadj.len() as Idx - 1,
+            "part.len() must be equal to the number of vertices",
+        );
 
         let nvtxs = &mut (self.xadj.len() as Idx - 1) as *mut Idx;
         let ncon = &mut self.ncon as *mut Idx;
@@ -415,7 +419,11 @@ impl<'a> Graph<'a> {
     /// vertices.
     pub fn part_kway(mut self, part: &mut [Idx]) -> Result<Idx> {
         let part_len = Idx::try_from(part.len()).expect("part array larger than Idx::MAX");
-        assert_eq!(part_len, self.xadj.len() as Idx - 1);
+        assert_eq!(
+            part_len,
+            self.xadj.len() as Idx - 1,
+            "part.len() must be equal to the number of vertices",
+        );
 
         let nvtxs = &mut (self.xadj.len() as Idx - 1) as *mut Idx;
         let ncon = &mut self.ncon as *mut Idx;
@@ -539,8 +547,8 @@ impl<'a> Mesh<'a> {
     pub fn new(nn: Idx, nparts: Idx, eptr: &'a mut [Idx], eind: &'a mut [Idx]) -> Mesh<'a> {
         assert!(0 < nn, "nn must be strictly greater than zero");
         assert!(0 < nparts, "nn must be strictly greater than zero");
-        let ne_plus_1 = Idx::try_from(eptr.len()).expect("eptr array larger than Idx::MAX");
-        assert_ne!(ne_plus_1, 0);
+        let _ = Idx::try_from(eptr.len()).expect("eptr array larger than Idx::MAX");
+        assert_ne!(eptr.len(), 0);
         let eind_len = Idx::try_from(eind.len()).expect("eind array larger than Idx::MAX");
         assert_eq!(eind_len, *eptr.last().unwrap());
 
@@ -628,9 +636,16 @@ impl<'a> Mesh<'a> {
     /// elements, or if `nparts`'s is not the number of nodes.
     pub fn part_dual(mut self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
         let epart_len = Idx::try_from(epart.len()).expect("epart array larger than Idx::MAX");
-        assert_eq!(epart_len, self.eptr.len() as Idx - 1);
+        assert_eq!(
+            epart_len,
+            self.eptr.len() as Idx - 1,
+            "epart.len() must be equal to the number of elements",
+        );
         let npart_len = Idx::try_from(npart.len()).expect("npart array larger than Idx::MAX");
-        assert_eq!(npart_len, self.nn);
+        assert_eq!(
+            npart_len, self.nn,
+            "npart.len() must be equal to the number of nodes",
+        );
 
         let ne = &mut (self.eptr.len() as Idx - 1) as *mut Idx;
         let nn = &mut self.nn as *mut Idx;
@@ -693,9 +708,16 @@ impl<'a> Mesh<'a> {
     /// elements, or if `nparts`'s is not the number of nodes.
     pub fn part_nodal(mut self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
         let epart_len = Idx::try_from(epart.len()).expect("epart array larger than Idx::MAX");
-        assert_eq!(epart_len, self.eptr.len() as Idx - 1);
+        assert_eq!(
+            epart_len,
+            self.eptr.len() as Idx - 1,
+            "epart.len() must be equal to the number of elements",
+        );
         let npart_len = Idx::try_from(npart.len()).expect("npart array larger than Idx::MAX");
-        assert_eq!(npart_len, self.nn);
+        assert_eq!(
+            npart_len, self.nn,
+            "npart.len() must be equal to the number of nodes",
+        );
 
         let ne = &mut (self.eptr.len() as Idx - 1) as *mut Idx;
         let nn = &mut self.nn as *mut Idx;
