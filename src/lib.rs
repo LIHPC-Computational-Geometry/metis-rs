@@ -803,7 +803,7 @@ pub fn mesh_to_dual(
     mut numflag: Idx,
 ) -> Result<Dual> {
     let eptr_len = Idx::try_from(eptr.len()).expect("eptr array larger than Idx::MAX");
-    assert_ne!(eptr_len, 0);
+    assert_ne!(eptr_len, 0, "eptr cannot be empty");
 
     let ne = &mut (eptr_len - 1) as *mut Idx;
     let mut xadj = mem::MaybeUninit::uninit();
