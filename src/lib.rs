@@ -8,7 +8,9 @@ use metis_sys as m;
 use std::convert::TryFrom;
 use std::fmt;
 use std::mem;
+use std::os;
 use std::ptr;
+use std::slice;
 
 #[cfg(target_pointer_width = "16")]
 compile_error!("METIS does not support 16-bit architectures");
@@ -761,5 +763,70 @@ impl<'a> Mesh<'a> {
             .wrap()?;
             Ok(edgecut.assume_init())
         }
+    }
+}
+
+pub struct Dual {
+    xadj: &'static mut [Idx],
+    adjncy: &'static mut [Idx],
+}
+
+impl Dual {
+    pub fn xadj(&self) -> &[Idx] {
+        &self.xadj
+    }
+
+    pub fn adjncy(&self) -> &[Idx] {
+        &self.adjncy
+    }
+
+    pub fn as_mut(&mut self) -> (&mut [Idx], &mut [Idx]) {
+        (self.xadj, self.adjncy)
+    }
+}
+
+impl Drop for Dual {
+    fn drop(&mut self) {
+        unsafe {
+            m::METIS_Free(self.xadj.as_mut_ptr() as *mut os::raw::c_void);
+            m::METIS_Free(self.adjncy.as_mut_ptr() as *mut os::raw::c_void);
+        }
+    }
+}
+
+/// Generate the dual graph of a mesh.
+pub fn mesh_to_dual(
+    mut nn: Idx,
+    eptr: &mut [Idx],
+    eind: &mut [Idx],
+    mut ncommon: Idx,
+    mut numflag: Idx,
+) -> Result<Dual> {
+    let eptr_len = Idx::try_from(eptr.len()).expect("eptr array larger than Idx::MAX");
+    assert_ne!(eptr_len, 0);
+
+    let ne = &mut (eptr_len - 1) as *mut Idx;
+    let mut xadj = mem::MaybeUninit::uninit();
+    let mut adjncy = mem::MaybeUninit::uninit();
+
+    // SAFETY: METIS_MeshToDual allocates the xadj and adjncy arrays.
+    // SAFETY: hopefully those arrays are of correct length.
+    unsafe {
+        m::METIS_MeshToDual(
+            ne,
+            &mut nn as *mut Idx,
+            eptr.as_mut_ptr(),
+            eind.as_mut_ptr(),
+            &mut ncommon as *mut Idx,
+            &mut numflag as *mut Idx,
+            xadj.as_mut_ptr(),
+            adjncy.as_mut_ptr(),
+        )
+        .wrap()?;
+        let xadj = xadj.assume_init();
+        let xadj = slice::from_raw_parts_mut(xadj, eptr.len());
+        let adjncy = adjncy.assume_init();
+        let adjncy = slice::from_raw_parts_mut(adjncy, xadj[xadj.len() - 1] as usize);
+        Ok(Dual { xadj, adjncy })
     }
 }
