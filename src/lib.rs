@@ -2,7 +2,9 @@
 //!
 //! This crate provides a thin but idiomatic API for libmetis.
 //!
-//! See [Graph] for a usage example.
+//! See [`Graph`] for a usage example.
+
+#![deny(missing_docs)]
 
 use metis_sys as m;
 use std::convert::TryFrom;
@@ -17,25 +19,24 @@ pub mod option;
 #[cfg(target_pointer_width = "16")]
 compile_error!("METIS does not support 16-bit architectures");
 
-/// Integer type used by METIS, can either be an [i32] or an [i64].
+/// Integer type used by METIS, can either be an [`i32`] or an [`i64`].
 pub type Idx = m::idx_t;
 
-/// Floating-point type used by METIS, can either be an [f32] or an [f64].
+/// Floating-point type used by METIS, can either be an [`f32`] or an [`f64`].
 pub type Real = m::real_t;
 
 /// The length of the `options` array.
 ///
-/// See [Graph::set_options] for an example.  It is also used in
-/// [Mesh::set_options].
+/// See [`Graph::set_options`] for an example.  It is also used in
+/// [`Mesh::set_options`].
 pub const NOPTIONS: usize = m::METIS_NOPTIONS as usize;
 
 /// Error type returned by METIS.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     /// Input is invalid.
     ///
-    /// This is most likely to happen with options, as other parameters are
-    /// checked with asserts by this bindings.
+    /// These bindings should check for most input errors, if not all.
     Input,
 
     /// METIS hit an out-of-memory error.
@@ -61,7 +62,7 @@ impl fmt::Display for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 trait ErrorCode {
-    /// Makes a [Result] from a return code (int) from METIS.
+    /// Makes a [`Result`] from a return code (int) from METIS.
     fn wrap(self) -> Result<()>;
 }
 
@@ -102,6 +103,7 @@ impl ErrorCode for m::rstatus_et {
 /// // The two vertices are placed in different parts.
 /// assert_ne!(part[0], part[1]);
 /// ```
+#[derive(Debug, PartialEq)]
 pub struct Graph<'a> {
     /// The number of balancing constrains.
     ncon: Idx,
@@ -149,12 +151,12 @@ pub struct Graph<'a> {
 }
 
 impl<'a> Graph<'a> {
-    /// Creates a new [Graph] object to be partitioned.
+    /// Creates a new [`Graph`] object to be partitioned.
     ///
     /// # Panics
     ///
     /// This function panics if:
-    /// - any of the arrays have a length that cannot be hold by an [Idx], or
+    /// - any of the arrays have a length that cannot be hold by an [`Idx`], or
     /// - `ncon` is not strictly greater than zero, or
     /// - `nparts` is not strictly greater than zero, or
     /// - `xadj` is empty, or
@@ -162,9 +164,9 @@ impl<'a> Graph<'a> {
     ///
     /// # Mutability
     ///
-    /// While nothing should be modified by the [Graph] structure, METIS doesn't
-    /// specify any `const` modifier, so everything must be mutable on Rust's
-    /// side.
+    /// While nothing should be modified by the [`Graph`] structure, METIS
+    /// doesn't specify any `const` modifier, so everything must be mutable on
+    /// Rust's side.
     pub fn new(ncon: Idx, nparts: Idx, xadj: &'a mut [Idx], adjncy: &'a mut [Idx]) -> Graph<'a> {
         assert!(0 < ncon, "ncon must be strictly greater than zero");
         assert!(0 < nparts, "nparts must be strictly greater than zero");
@@ -263,7 +265,7 @@ impl<'a> Graph<'a> {
 
     /// Sets the fine-tuning parameters for this partitioning.
     ///
-    /// When only few options are to be set, [`Graph::set_option`] might be a
+    /// When few options are to be set, [`Graph::set_option`] might be a
     /// better fit.
     ///
     /// See the [option] module for the list of available parameters.  Note that
@@ -281,9 +283,12 @@ impl<'a> Graph<'a> {
     /// let xadj = &mut [0, 1, 2];
     /// let adjncy = &mut [1, 0];
     /// let mut part = [0, 0];
-    /// let mut options = [-1; metis::NOPTIONS]; // -1 is the default value.
     ///
-    /// options[metis::option::NIter::index()] = 4; // four refinement iterations instead of the default 10.
+    /// // -1 is the default value.
+    /// let mut options = [-1; metis::NOPTIONS];
+    ///
+    /// // four refinement iterations instead of the default 10.
+    /// options[metis::option::NIter::index()] = 4;
     ///
     /// Graph::new(1, 2, xadj, adjncy)
     ///     .set_options(&options)
@@ -487,7 +492,9 @@ impl<'a> Graph<'a> {
 ///
 /// # Example
 ///
-/// Usage is fairly similar to [Graph].  Refer to its documentation for details.
+/// Usage is fairly similar to [`Graph`].  Refer to its documentation for
+/// details.
+#[derive(Debug, PartialEq)]
 pub struct Mesh<'a> {
     /// The number of nodes in the mesh.
     nn: Idx,
@@ -524,7 +531,7 @@ pub struct Mesh<'a> {
 }
 
 impl<'a> Mesh<'a> {
-    /// Creates a new [Mesh] object to be partitioned.
+    /// Creates a new [`Mesh`] object to be partitioned.
     ///
     /// # Panics
     ///
@@ -533,13 +540,13 @@ impl<'a> Mesh<'a> {
     /// - `nparts` is not strictly greater than zero, or
     /// - `eptr` is empty, or
     /// - the length of `eind` is different than the last element of `eptr`, or
-    /// - any of the arrays have a length that cannot be hold by an [Idx].
+    /// - any of the arrays have a length that cannot be hold by an [`Idx`].
     ///
     /// # Mutability
     ///
-    /// While nothing should be modified by the [Mesh] structure, METIS doesn't
-    /// specify any `const` modifier, so everything must be mutable on Rust's
-    /// side.
+    /// While nothing should be modified by the [`Mesh`] structure, METIS
+    /// doesn't specify any `const` modifier, so everything must be mutable on
+    /// Rust's side.
     pub fn new(nn: Idx, nparts: Idx, eptr: &'a mut [Idx], eind: &'a mut [Idx]) -> Mesh<'a> {
         assert!(0 < nn, "nn must be strictly greater than zero");
         assert!(0 < nparts, "nn must be strictly greater than zero");
@@ -607,7 +614,7 @@ impl<'a> Mesh<'a> {
 
     /// Sets the fine-tuning parameters for this partitioning.
     ///
-    /// When only few options are to be set, [`Mesh::set_option`] might be a
+    /// When few options are to be set, [`Mesh::set_option`] might be a
     /// better fit.
     ///
     /// See the [option] module for the list of available parameters.  Note that
@@ -775,20 +782,27 @@ impl<'a> Mesh<'a> {
     }
 }
 
+/// The dual of a mesh.
+///
+/// Result of [`mesh_to_dual`].
+#[derive(Debug, PartialEq, Eq)]
 pub struct Dual {
     xadj: &'static mut [Idx],
     adjncy: &'static mut [Idx],
 }
 
 impl Dual {
+    /// The adjacency index array.
     pub fn xadj(&self) -> &[Idx] {
-        &self.xadj
+        self.xadj
     }
 
+    /// The adjacency array.
     pub fn adjncy(&self) -> &[Idx] {
-        &self.adjncy
+        self.adjncy
     }
 
+    /// The adjacency index array, and the adjacency array as mutable slices.
     pub fn as_mut(&mut self) -> (&mut [Idx], &mut [Idx]) {
         (self.xadj, self.adjncy)
     }
@@ -804,6 +818,13 @@ impl Drop for Dual {
 }
 
 /// Generate the dual graph of a mesh.
+///
+/// # Panics
+///
+/// This function panics if:
+///
+/// - `eptr` is empty, or
+/// - `eptr`'s length doesn't fit in [`Idx`].
 pub fn mesh_to_dual(
     mut nn: Idx,
     eptr: &mut [Idx],
