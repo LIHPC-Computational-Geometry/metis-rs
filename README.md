@@ -4,9 +4,13 @@ Idiomatic bindings to [libmetis][METIS], a graph and mesh partitioner.
 
 ## Building
 
-Bindings to METIS are made on the fly.  You'll need METIS' header files and
-shared libraries in order to build these bindings.  If those are in non-standard
-locations, please use the following commands:
+Prerequisites:
+
+- METIS
+- clang v3.9 or above
+
+Bindings to METIS are made on the fly.  If METIS is installed in a non-standard
+location, please use the following commands:
 
     export METISDIR=path/to/your/metis/installation
     export CPATH="$METISDIR/include"
