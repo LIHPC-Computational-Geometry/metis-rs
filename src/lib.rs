@@ -12,6 +12,8 @@ use std::os;
 use std::ptr;
 use std::slice;
 
+pub mod option;
+
 #[cfg(target_pointer_width = "16")]
 compile_error!("METIS does not support 16-bit architectures");
 
@@ -21,51 +23,11 @@ pub type Idx = m::idx_t;
 /// Floating-point type used by METIS, can either be an [f32] or an [f64].
 pub type Real = m::real_t;
 
-/// Fine-tuning parameter type.
-pub type Opt = usize; // need usize for indexing
-
 /// The length of the `options` array.
 ///
 /// See [Graph::set_options] for an example.  It is also used in
 /// [Mesh::set_options].
 pub const NOPTIONS: usize = m::METIS_NOPTIONS as usize;
-
-pub mod option {
-    //! Fine-tuning parameter types.
-    //!
-    //! Please see documentation of METIS ([link]) for details.
-    //!
-    //! [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
-
-    use crate::m;
-    use crate::Opt;
-
-    pub const PTYPE: Opt = m::moptions_et_METIS_OPTION_PTYPE as usize;
-    pub const OBJTYPE: Opt = m::moptions_et_METIS_OPTION_OBJTYPE as usize;
-    pub const CTYPE: Opt = m::moptions_et_METIS_OPTION_CTYPE as usize;
-    pub const IPTYPE: Opt = m::moptions_et_METIS_OPTION_IPTYPE as usize;
-    pub const RTYPE: Opt = m::moptions_et_METIS_OPTION_RTYPE as usize;
-    pub const DBGLVL: Opt = m::moptions_et_METIS_OPTION_DBGLVL as usize;
-    pub const NITER: Opt = m::moptions_et_METIS_OPTION_NITER as usize;
-    pub const NCUTS: Opt = m::moptions_et_METIS_OPTION_NCUTS as usize;
-    pub const SEED: Opt = m::moptions_et_METIS_OPTION_SEED as usize;
-    pub const NO2HOP: Opt = m::moptions_et_METIS_OPTION_NO2HOP as usize;
-    pub const MINCONN: Opt = m::moptions_et_METIS_OPTION_MINCONN as usize;
-    pub const CONTIG: Opt = m::moptions_et_METIS_OPTION_CONTIG as usize;
-    pub const COMPRESS: Opt = m::moptions_et_METIS_OPTION_COMPRESS as usize;
-    pub const CCORDER: Opt = m::moptions_et_METIS_OPTION_CCORDER as usize;
-    pub const PFACTOR: Opt = m::moptions_et_METIS_OPTION_PFACTOR as usize;
-    pub const NSEPS: Opt = m::moptions_et_METIS_OPTION_NSEPS as usize;
-    pub const UFACTOR: Opt = m::moptions_et_METIS_OPTION_UFACTOR as usize;
-    pub const NUMBERING: Opt = m::moptions_et_METIS_OPTION_NUMBERING as usize;
-    pub const HELP: Opt = m::moptions_et_METIS_OPTION_HELP as usize;
-    pub const TPWGTS: Opt = m::moptions_et_METIS_OPTION_TPWGTS as usize;
-    pub const NCOMMON: Opt = m::moptions_et_METIS_OPTION_NCOMMON as usize;
-    pub const NOOUTPUT: Opt = m::moptions_et_METIS_OPTION_NOOUTPUT as usize;
-    pub const BALANCE: Opt = m::moptions_et_METIS_OPTION_BALANCE as usize;
-    pub const GTYPE: Opt = m::moptions_et_METIS_OPTION_GTYPE as usize;
-    pub const UBVEC: Opt = m::moptions_et_METIS_OPTION_UBVEC as usize;
-}
 
 /// Error type returned by METIS.
 #[derive(Debug)]
@@ -183,7 +145,7 @@ pub struct Graph<'a> {
     ubvec: Option<&'a mut [Real]>,
 
     /// Fine-tuning parameters.
-    options: Option<&'a mut [Idx; NOPTIONS]>,
+    options: [Idx; NOPTIONS],
 }
 
 impl<'a> Graph<'a> {
@@ -221,7 +183,7 @@ impl<'a> Graph<'a> {
             adjwgt: None,
             tpwgts: None,
             ubvec: None,
-            options: None,
+            options: [-1; NOPTIONS],
         }
     }
 
@@ -301,6 +263,46 @@ impl<'a> Graph<'a> {
 
     /// Sets the fine-tuning parameters for this partitioning.
     ///
+    /// When only few options are to be set, [`Graph::set_option`] might be a
+    /// better fit.
+    ///
+    /// See the [option] module for the list of available parameters.  Note that
+    /// not all are applicable to a given partitioning method.  Refer to the
+    /// documentation of METIS ([link]) for more info on this.
+    ///
+    /// [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use metis::Graph;
+    /// use metis::option::Opt;
+    ///
+    /// let xadj = &mut [0, 1, 2];
+    /// let adjncy = &mut [1, 0];
+    /// let mut part = [0, 0];
+    /// let mut options = [-1; metis::NOPTIONS]; // -1 is the default value.
+    ///
+    /// options[metis::option::NIter::index()] = 4; // four refinement iterations instead of the default 10.
+    ///
+    /// Graph::new(1, 2, xadj, adjncy)
+    ///     .set_options(&options)
+    ///     .part_recursive(&mut part)
+    ///     .unwrap();
+    ///
+    /// // The two vertices are placed in different parts.
+    /// assert_ne!(part[0], part[1]);
+    /// ```
+    pub fn set_options(mut self, options: &[Idx; NOPTIONS]) -> Graph<'a> {
+        self.options.copy_from_slice(options);
+        self
+    }
+
+    /// Sets a fine-tuning parameter for this partitioning.
+    ///
+    /// When options are to be set in batches, [`Graph::set_options`] might be a
+    /// better fit.
+    ///
     /// See the [option] module for the list of available parameters.  Note that
     /// not all are applicable to a given partitioning method.  Refer to the
     /// documentation of METIS ([link]) for more info on this.
@@ -314,20 +316,20 @@ impl<'a> Graph<'a> {
     /// let xadj = &mut [0, 1, 2];
     /// let adjncy = &mut [1, 0];
     /// let mut part = [0, 0];
-    /// let mut options = [-1; metis::NOPTIONS]; // -1 is the default value.
-    ///
-    /// options[metis::option::NITER] = 4; // four refinement iterations instead of the default 10.
     ///
     /// Graph::new(1, 2, xadj, adjncy)
-    ///     .set_options(&mut options)
+    ///     .set_option(metis::option::NIter(4))
     ///     .part_recursive(&mut part)
     ///     .unwrap();
     ///
     /// // The two vertices are placed in different parts.
     /// assert_ne!(part[0], part[1]);
     /// ```
-    pub fn set_options(mut self, options: &'a mut [Idx; NOPTIONS]) -> Graph<'a> {
-        self.options = Some(options);
+    pub fn set_option<O>(mut self, option: O) -> Graph<'a>
+    where
+        O: option::Opt,
+    {
+        self.options[O::index()] = option.value();
         self
     }
 
@@ -380,11 +382,7 @@ impl<'a> Graph<'a> {
         } else {
             ptr::null_mut()
         };
-        let options = if let Some(options) = self.options {
-            options.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
+        let options = self.options.as_mut_ptr();
         let mut edgecut = mem::MaybeUninit::uninit();
         let part = part.as_mut_ptr();
         unsafe {
@@ -457,11 +455,7 @@ impl<'a> Graph<'a> {
         } else {
             ptr::null_mut()
         };
-        let options = if let Some(options) = self.options {
-            options.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
+        let options = self.options.as_mut_ptr();
         let mut edgecut = mem::MaybeUninit::uninit();
         let part = part.as_mut_ptr();
         unsafe {
@@ -526,7 +520,7 @@ pub struct Mesh<'a> {
     tpwgts: Option<&'a mut [Real]>,
 
     /// Fine-tuning parameters.
-    options: Option<&'a mut [Idx; NOPTIONS]>,
+    options: [Idx; NOPTIONS],
 }
 
 impl<'a> Mesh<'a> {
@@ -563,7 +557,7 @@ impl<'a> Mesh<'a> {
             vwgt: None,
             vsize: None,
             tpwgts: None,
-            options: None,
+            options: [-1; NOPTIONS],
         }
     }
 
@@ -613,15 +607,38 @@ impl<'a> Mesh<'a> {
 
     /// Sets the fine-tuning parameters for this partitioning.
     ///
+    /// When only few options are to be set, [`Mesh::set_option`] might be a
+    /// better fit.
+    ///
     /// See the [option] module for the list of available parameters.  Note that
     /// not all are applicable to a given partitioning method.  Refer to the
     /// documentation of METIS ([link]) for more info on this.
     ///
-    /// See [Graph::set_options] for a usage example.
+    /// See [`Graph::set_options`] for a usage example.
     ///
     /// [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
-    pub fn set_options(mut self, options: &'a mut [Idx; NOPTIONS]) -> Mesh<'a> {
-        self.options = Some(options);
+    pub fn set_options(mut self, options: &[Idx; NOPTIONS]) -> Mesh<'a> {
+        self.options.copy_from_slice(options);
+        self
+    }
+
+    /// Sets a fine-tuning parameter for this partitioning.
+    ///
+    /// When options are to be set in batches, [`Mesh::set_options`] might be a
+    /// better fit.
+    ///
+    /// See the [option] module for the list of available parameters.  Note that
+    /// not all are applicable to a given partitioning method.  Refer to the
+    /// documentation of METIS ([link]) for more info on this.
+    ///
+    /// See [`Graph::set_option`] for a usage example.
+    ///
+    /// [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
+    pub fn set_option<O>(mut self, option: O) -> Mesh<'a>
+    where
+        O: option::Opt,
+    {
+        self.options[O::index()] = option.value();
         self
     }
 
@@ -668,11 +685,7 @@ impl<'a> Mesh<'a> {
         } else {
             ptr::null_mut()
         };
-        let options = if let Some(options) = self.options {
-            options.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
+        let options = self.options.as_mut_ptr();
         let mut edgecut = mem::MaybeUninit::uninit();
         unsafe {
             m::METIS_PartMeshDual(
@@ -739,11 +752,7 @@ impl<'a> Mesh<'a> {
         } else {
             ptr::null_mut()
         };
-        let options = if let Some(options) = self.options {
-            options.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
+        let options = self.options.as_mut_ptr();
         let mut edgecut = mem::MaybeUninit::uninit();
         unsafe {
             m::METIS_PartMeshNodal(
