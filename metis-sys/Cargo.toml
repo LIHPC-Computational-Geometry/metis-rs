@@ -5,6 +5,7 @@ authors = ["Hubert Hirtz <hubert@hirtz.pm>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/LIHPC-Computational-Geometry/metis-rs"
+documentation = "https://LIHPC-Computational-Geometry.github.io/metis-rs/metis_sys"
 description = "Raw FFI to METIS, the serial graph partitioner and fill-reducing matrix orderer"
 readme = "../README.md"
 categories = ["external-ffi-bindings", "mathematics"]
