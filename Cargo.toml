@@ -8,6 +8,7 @@ authors = ["Hubert Hirtz <hubert@hirtz.pm>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/LIHPC-Computational-Geometry/metis-rs"
+documentation = "https://LIHPC-Computational-Geometry.github.io/metis-rs/metis"
 description = "Idiomatic wrapper for METIS, the serial graph partitioner and fill-reducing matrix orderer"
 categories = ["api-bindings", "mathematics"]
 keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
@@ -15,4 +16,4 @@ keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-metis-sys = { path = "metis-sys" }
+metis-sys = "0.1"
