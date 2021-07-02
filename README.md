@@ -1,4 +1,4 @@
-# scotch-rs
+# metis-rs
 
 Idiomatic bindings to [libmetis][METIS], a graph and mesh partitioner.
 

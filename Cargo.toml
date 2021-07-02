@@ -3,7 +3,7 @@ members = [".", "metis-sys"]
 
 [package]
 name = "metis"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Hubert Hirtz <hubert@hirtz.pm>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
