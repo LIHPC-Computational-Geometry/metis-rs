@@ -1,6 +1,4 @@
-//! A wrapper around Scotch bindings.
-//!
-//! This crate provides a thin but idiomatic API for libmetis.
+//! This crate provides a thin but idiomatic API around libmetis.
 //!
 //! See [`Graph`] for a usage example.
 
