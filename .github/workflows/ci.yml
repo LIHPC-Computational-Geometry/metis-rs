@@ -53,17 +53,12 @@ jobs:
   fmt:
     name: Rustfmt
     runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        rust:
-          - stable
-          - 1.52.0
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
           override: true
           components: rustfmt
       - uses: actions-rs/cargo@v1
@@ -74,17 +69,12 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        rust:
-          - stable
-          - 1.52.0
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
           override: true
           components: clippy
       - run: sudo apt-get -y install libmetis-dev libclang-dev
