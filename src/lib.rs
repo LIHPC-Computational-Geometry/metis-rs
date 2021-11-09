@@ -288,7 +288,7 @@ impl<'a> Graph<'a> {
     /// let mut options = [-1; metis::NOPTIONS];
     ///
     /// // four refinement iterations instead of the default 10.
-    /// options[metis::option::NIter::index()] = 4;
+    /// options[metis::option::NIter::INDEX] = 4;
     ///
     /// Graph::new(1, 2, xadj, adjncy)
     ///     .set_options(&options)
@@ -334,7 +334,7 @@ impl<'a> Graph<'a> {
     where
         O: option::Opt,
     {
-        self.options[O::index()] = option.value();
+        self.options[O::INDEX] = option.value();
         self
     }
 
@@ -645,7 +645,7 @@ impl<'a> Mesh<'a> {
     where
         O: option::Opt,
     {
-        self.options[O::index()] = option.value();
+        self.options[O::INDEX] = option.value();
         self
     }
 
