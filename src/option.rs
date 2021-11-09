@@ -15,10 +15,12 @@ mod private {
 /// See [`crate::Graph::set_options`] for an example.  It is also used in
 /// [`crate::Mesh::set_options`].
 pub trait Opt: private::Sealed {
-    #[doc(hidden)]
-    fn index() -> usize; // need usize for array indexing.
+    /// Index of the option in the array from [`crate::Graph::set_options`] and
+    /// [`crate::Mesh::set_options`].
+    const INDEX: usize;
 
-    #[doc(hidden)]
+    /// Convert the value into metis' format, for use with
+    /// [`crate::Graph::set_options`] and [`crate::Mesh::set_options`].
     fn value(self) -> Idx;
 }
 
@@ -33,12 +35,8 @@ pub enum PType {
 
 impl private::Sealed for PType {}
 impl Opt for PType {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_PTYPE as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_PTYPE as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         match self {
             PType::Rb => m::mptype_et_METIS_PTYPE_RB as Idx,
@@ -58,12 +56,8 @@ pub enum ObjType {
 
 impl private::Sealed for ObjType {}
 impl Opt for ObjType {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_OBJTYPE as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_OBJTYPE as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         match self {
             ObjType::Cut => m::mobjtype_et_METIS_OBJTYPE_CUT as Idx,
@@ -83,12 +77,8 @@ pub enum CType {
 
 impl private::Sealed for CType {}
 impl Opt for CType {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_CTYPE as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_CTYPE as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         match self {
             CType::Rm => m::mctype_et_METIS_CTYPE_RM as Idx,
@@ -114,12 +104,8 @@ pub enum IpType {
 
 impl private::Sealed for IpType {}
 impl Opt for IpType {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_IPTYPE as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_IPTYPE as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         match self {
             IpType::Grow => m::miptype_et_METIS_IPTYPE_GROW as Idx,
@@ -147,12 +133,8 @@ pub enum RType {
 
 impl private::Sealed for RType {}
 impl Opt for RType {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_RTYPE as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_RTYPE as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         match self {
             RType::Fm => m::mrtype_et_METIS_RTYPE_FM as Idx,
@@ -170,12 +152,8 @@ pub struct NCuts(pub Idx);
 
 impl private::Sealed for NCuts {}
 impl Opt for NCuts {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_NCUTS as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_NCUTS as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0
     }
@@ -189,12 +167,8 @@ pub struct NSeps(pub Idx);
 
 impl private::Sealed for NSeps {}
 impl Opt for NSeps {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_NSEPS as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_NSEPS as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0
     }
@@ -212,12 +186,8 @@ pub enum Numbering {
 
 impl private::Sealed for Numbering {}
 impl Opt for Numbering {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_NUMBERING as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_NUMBERING as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         match self {
             Numbering::C => 0,
@@ -234,12 +204,8 @@ pub struct NIter(pub Idx);
 
 impl private::Sealed for NIter {}
 impl Opt for NIter {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_NITER as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_NITER as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0
     }
@@ -250,12 +216,8 @@ pub struct Seed(pub Idx);
 
 impl private::Sealed for Seed {}
 impl Opt for Seed {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_SEED as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_SEED as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0
     }
@@ -270,12 +232,8 @@ pub struct MinConn(pub bool);
 
 impl private::Sealed for MinConn {}
 impl Opt for MinConn {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_MINCONN as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_MINCONN as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0 as Idx
     }
@@ -290,12 +248,8 @@ pub struct No2Hop(pub bool);
 
 impl private::Sealed for No2Hop {}
 impl Opt for No2Hop {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_NO2HOP as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_NO2HOP as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0 as Idx
     }
@@ -309,12 +263,8 @@ pub struct Contig(pub bool);
 
 impl private::Sealed for Contig {}
 impl Opt for Contig {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_CONTIG as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_CONTIG as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0 as Idx
     }
@@ -326,12 +276,8 @@ pub struct Compress(pub bool);
 
 impl private::Sealed for Compress {}
 impl Opt for Compress {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_COMPRESS as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_COMPRESS as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0 as Idx
     }
@@ -343,12 +289,8 @@ pub struct CCOrder(pub bool);
 
 impl private::Sealed for CCOrder {}
 impl Opt for CCOrder {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_CCORDER as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_CCORDER as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0 as Idx
     }
@@ -377,12 +319,8 @@ pub struct PFactor(pub Idx);
 
 impl private::Sealed for PFactor {}
 impl Opt for PFactor {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_PFACTOR as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_PFACTOR as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0
     }
@@ -402,12 +340,8 @@ pub struct UFactor(pub Idx);
 
 impl private::Sealed for UFactor {}
 impl Opt for UFactor {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_UFACTOR as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_UFACTOR as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         self.0
     }
@@ -450,12 +384,8 @@ pub struct DbgLvl {
 
 impl private::Sealed for DbgLvl {}
 impl Opt for DbgLvl {
-    #[doc(hidden)]
-    fn index() -> usize {
-        m::moptions_et_METIS_OPTION_DBGLVL as usize
-    }
+    const INDEX: usize = m::moptions_et_METIS_OPTION_DBGLVL as usize;
 
-    #[doc(hidden)]
     fn value(self) -> Idx {
         let mut dbglvl = 0;
         if self.info {
