@@ -8,6 +8,12 @@ fn main() {
 
     let bindings = bindgen::builder()
         .header("wrapper.h")
+        .allowlist_function("METIS_.*")
+        .allowlist_type("idx_t")
+        .allowlist_type("real_t")
+        .allowlist_type("rstatus_et")
+        .allowlist_type("m.*_et")
+        .allowlist_var("METIS_.*")
         .generate()
         .unwrap_or_else(|err| {
             eprintln!("Failed to generate bindings to METIS: {err}");
