@@ -3,12 +3,11 @@ members = [".", "metis-sys"]
 
 [package]
 name = "metis"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Hubert Hirtz <hubert@hirtz.pm>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/LIHPC-Computational-Geometry/metis-rs"
-documentation = "https://LIHPC-Computational-Geometry.github.io/metis-rs/metis"
 description = "Idiomatic wrapper for METIS, the serial graph partitioner and fill-reducing matrix orderer"
 categories = ["api-bindings", "mathematics"]
 keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
