@@ -1,11 +1,10 @@
 [package]
 name = "metis-sys"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Hubert Hirtz <hubert@hirtz.pm>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/LIHPC-Computational-Geometry/metis-rs"
-documentation = "https://LIHPC-Computational-Geometry.github.io/metis-rs/metis_sys"
 description = "Raw FFI to METIS, the serial graph partitioner and fill-reducing matrix orderer"
 readme = "../README.md"
 categories = ["external-ffi-bindings", "mathematics"]
