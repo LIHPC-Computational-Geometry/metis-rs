@@ -9,8 +9,8 @@ fn main() {
     let bindings = bindgen::builder()
         .header("wrapper.h")
         .generate()
-        .unwrap_or_else(|()| {
-            eprintln!("Failed to generate bindings to METIS");
+        .unwrap_or_else(|err| {
+            eprintln!("Failed to generate bindings to METIS: {err}");
             process::exit(1);
         });
 
