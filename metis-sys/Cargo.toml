@@ -12,4 +12,4 @@ keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 
 
 [build-dependencies]
-bindgen = { version = "0.65", default-features = false }
+bindgen = { version = "0.65", default-features = false, features = ["runtime"] }
