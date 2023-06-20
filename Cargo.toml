@@ -1,6 +1,7 @@
 [workspace]
 members = [".", "metis-sys"]
 
+
 [package]
 name = "metis"
 version = "0.1.2"
@@ -12,7 +13,17 @@ description = "Idiomatic wrapper for METIS, the serial graph partitioner and fil
 categories = ["api-bindings", "mathematics"]
 keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+# See optional dependencies below.
+
 
 [dependencies]
 metis-sys = { version = "0.2", path = "metis-sys" }
+
+# Optional dependencies
+sprs = { version = "0.11", default-features = false, optional = true }
+
+
+[package.metadata.docs.rs]
+all-features = true
