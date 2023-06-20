@@ -1,8 +1,8 @@
 use metis::Graph;
 
-#[rustfmt::skip]
-fn main() {
+fn main() -> Result<(), metis::Error> {
     let xadj = &mut [0, 2, 5, 8, 11, 13, 16, 20, 24, 28, 31, 33, 36, 39, 42, 44];
+    #[rustfmt::skip]
     let adjncy = &mut [
         1, 5,
         0, 2, 6,
@@ -21,8 +21,8 @@ fn main() {
         9, 13,
     ];
     let mut part = vec![0x00; 15];
-    Graph::new(1, 2, xadj, adjncy)
-        .part_recursive(&mut part)
-        .unwrap();
+    Graph::new(1, 2, xadj, adjncy).part_recursive(&mut part)?;
     println!("{:?}", part);
+
+    Ok(())
 }

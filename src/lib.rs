@@ -84,6 +84,7 @@ impl ErrorCode for m::rstatus_et {
 /// # Example
 ///
 /// ```rust
+/// # fn main() -> Result<(), metis::Error> {
 /// # use metis::Graph;
 /// // Make a graph with two vertices and an edge between the two.
 /// let xadj = &mut [0, 1, 2];
@@ -95,11 +96,12 @@ impl ErrorCode for m::rstatus_et {
 /// // There are one constraint and two parts.  The partitioning algorithm used
 /// // is recursive bisection.  The k-way algorithm can also be used.
 /// Graph::new(1, 2, xadj, adjncy)
-///     .part_recursive(&mut part)
-///     .unwrap();
+///     .part_recursive(&mut part)?;
 ///
 /// // The two vertices are placed in different parts.
 /// assert_ne!(part[0], part[1]);
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Debug, PartialEq)]
 pub struct Graph<'a> {
@@ -275,8 +277,9 @@ impl<'a> Graph<'a> {
     /// # Example
     ///
     /// ```rust
+    /// # fn main() -> Result<(), metis::Error> {
     /// # use metis::Graph;
-    /// use metis::option::Opt;
+    /// use metis::option::Opt as _;
     ///
     /// let xadj = &mut [0, 1, 2];
     /// let adjncy = &mut [1, 0];
@@ -290,11 +293,12 @@ impl<'a> Graph<'a> {
     ///
     /// Graph::new(1, 2, xadj, adjncy)
     ///     .set_options(&options)
-    ///     .part_recursive(&mut part)
-    ///     .unwrap();
+    ///     .part_recursive(&mut part)?;
     ///
     /// // The two vertices are placed in different parts.
     /// assert_ne!(part[0], part[1]);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn set_options(mut self, options: &[Idx; NOPTIONS]) -> Graph<'a> {
         self.options.copy_from_slice(options);
@@ -315,6 +319,7 @@ impl<'a> Graph<'a> {
     /// # Example
     ///
     /// ```rust
+    /// # fn main() -> Result<(), metis::Error> {
     /// # use metis::Graph;
     /// let xadj = &mut [0, 1, 2];
     /// let adjncy = &mut [1, 0];
@@ -322,11 +327,12 @@ impl<'a> Graph<'a> {
     ///
     /// Graph::new(1, 2, xadj, adjncy)
     ///     .set_option(metis::option::NIter(4))
-    ///     .part_recursive(&mut part)
-    ///     .unwrap();
+    ///     .part_recursive(&mut part)?;
     ///
     /// // The two vertices are placed in different parts.
     /// assert_ne!(part[0], part[1]);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn set_option<O>(mut self, option: O) -> Graph<'a>
     where
