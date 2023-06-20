@@ -1,6 +1,10 @@
 //! This crate provides a thin but idiomatic API around libmetis.
 //!
 //! See [`Graph`] for a usage example.
+//!
+//! You might already be using an adjacency matrix format from another crate. In
+//! this case, the [`Partition`] trait can be used to convert this external type
+//! into [`Graph`].
 
 #![deny(missing_docs)]
 
@@ -14,6 +18,9 @@ use std::slice;
 
 pub mod option;
 
+#[cfg(feature = "sprs")]
+mod sprs;
+
 #[cfg(target_pointer_width = "16")]
 compile_error!("METIS does not support 16-bit architectures");
 
@@ -22,6 +29,19 @@ pub type Idx = m::idx_t;
 
 /// Floating-point type used by METIS, can either be an [`f32`] or an [`f64`].
 pub type Real = m::real_t;
+
+/// Trait for types that can be partitionned by METIS.
+///
+/// This crate does not provide a matrix type. You can use either [`Graph`]
+/// directly, or one of the following **cargo features**:
+///
+/// - **sprs**: partition a [`sprs::CsMatBase`] matrix from the [sprs] crate
+///
+/// See the *Implementations on Foreign Types* below for examples.
+pub trait Partition {
+    /// Convert into [`Graph`] to setup a new partition.
+    fn setup_partition(&self, nparts: Idx) -> Graph<'_>;
+}
 
 /// The length of the `options` array.
 ///
