@@ -193,6 +193,9 @@ impl<'a> Graph<'a> {
     ///
     /// By default all vertices have the same weight.
     ///
+    /// The `ncon` weights of the `i`th vertex must be located in
+    /// `vwgt[i*ncon..(i+1)*ncon]`, and all elements of `vwgt` must be positive.
+    ///
     /// # Panics
     ///
     /// This function panics if the length of `vwgt` is not `ncon` times the
@@ -207,6 +210,9 @@ impl<'a> Graph<'a> {
     /// Sets the communication weights of the vertices.
     ///
     /// By default all vertices have the same communication weight.
+    ///
+    /// Vertices can only have one communication weight. The length of `vsize`
+    /// does not depend on `ncon`.
     ///
     /// # Panics
     ///
@@ -223,6 +229,8 @@ impl<'a> Graph<'a> {
     ///
     /// By default all edges have the same weight.
     ///
+    /// All elements of `adjwgt` must be positive.
+    ///
     /// # Panics
     ///
     /// This function panics if the length of `adjwgt` is not equal to the
@@ -238,6 +246,11 @@ impl<'a> Graph<'a> {
     ///
     /// By default the graph is divided equally.
     ///
+    /// The target partition weight for the `i`th part and `j`th constraint is
+    /// specified at `tpwgts[i*ncon+j]`. For each constraint `j`, the sum of the
+    /// target partition weights must be 1.0. Meaning
+    /// `(0..nparts).map(|i| tpwgts[i*ncon+j]).sum() == 1.0`.
+    ///
     /// # Panics
     ///
     /// This function panics if the length of `tpwgts` is not equal to `ncon`
@@ -252,6 +265,10 @@ impl<'a> Graph<'a> {
     /// Sets the load imbalance tolerance for each constraint.
     ///
     /// By default it equals to 1.001 if `ncon` equals 1 and 1.01 otherwise.
+    ///
+    /// For the `i`th partition and `j`th constraint the allowed weight is the
+    /// `ubvec[j]*tpwgts[i*ncon+j]` fraction of the `j`th's constraint total
+    /// weight. The load imbalances must be greater than 1.0.
     ///
     /// # Panics
     ///
@@ -516,6 +533,8 @@ impl<'a> Mesh<'a> {
     ///
     /// By default all elements have the same weight.
     ///
+    /// All elements of `vwgt` must be positive.
+    ///
     /// # Panics
     ///
     /// This function panics if the length of `vwgt` is not the number of
@@ -542,9 +561,11 @@ impl<'a> Mesh<'a> {
         self
     }
 
-    /// Sets the target partition weights for each part and constraint.
+    /// Sets the target partition weights for each part.
     ///
     /// By default the mesh is divided equally.
+    ///
+    /// The sum of the target partition weights must be 1.0.
     ///
     /// # Panics
     ///
