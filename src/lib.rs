@@ -361,52 +361,22 @@ impl<'a> Graph<'a> {
             "part.len() must be equal to the number of vertices",
         );
 
-        let nvtxs = &mut (self.xadj.len() as Idx - 1) as *mut Idx;
-        let ncon = &mut self.ncon as *mut Idx;
-        let xadj = self.xadj.as_mut_ptr();
-        let adjncy = self.adjncy.as_mut_ptr();
-        let vwgt = if let Some(vwgt) = self.vwgt {
-            vwgt.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let vsize = if let Some(vsize) = self.vsize {
-            vsize.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let adjwgt = if let Some(adjwgt) = self.adjwgt {
-            adjwgt.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let nparts = &mut self.nparts as *mut Idx;
-        let tpwgts = if let Some(tpwgts) = self.tpwgts {
-            tpwgts.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let ubvec = if let Some(ubvec) = self.ubvec {
-            ubvec.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let options = self.options.as_mut_ptr();
+        let nvtxs = &mut (self.xadj.len() as Idx - 1);
         let mut edgecut = mem::MaybeUninit::uninit();
         let part = part.as_mut_ptr();
         unsafe {
             m::METIS_PartGraphRecursive(
                 nvtxs,
-                ncon,
-                xadj,
-                adjncy,
-                vwgt,
-                vsize,
-                adjwgt,
-                nparts,
-                tpwgts,
-                ubvec,
-                options,
+                &mut self.ncon,
+                self.xadj.as_mut_ptr(),
+                self.adjncy.as_mut_ptr(),
+                self.vwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.vsize.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.adjwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                &mut self.nparts,
+                self.tpwgts.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.ubvec.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.options.as_mut_ptr(),
                 edgecut.as_mut_ptr(),
                 part,
             )
@@ -434,52 +404,22 @@ impl<'a> Graph<'a> {
             "part.len() must be equal to the number of vertices",
         );
 
-        let nvtxs = &mut (self.xadj.len() as Idx - 1) as *mut Idx;
-        let ncon = &mut self.ncon as *mut Idx;
-        let xadj = self.xadj.as_mut_ptr();
-        let adjncy = self.adjncy.as_mut_ptr();
-        let vwgt = if let Some(vwgt) = self.vwgt {
-            vwgt.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let vsize = if let Some(vsize) = self.vsize {
-            vsize.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let adjwgt = if let Some(adjwgt) = self.adjwgt {
-            adjwgt.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let nparts = &mut self.nparts as *mut Idx;
-        let tpwgts = if let Some(tpwgts) = self.tpwgts {
-            tpwgts.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let ubvec = if let Some(ubvec) = self.ubvec {
-            ubvec.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let options = self.options.as_mut_ptr();
+        let nvtxs = &mut (self.xadj.len() as Idx - 1);
         let mut edgecut = mem::MaybeUninit::uninit();
         let part = part.as_mut_ptr();
         unsafe {
             m::METIS_PartGraphKway(
                 nvtxs,
-                ncon,
-                xadj,
-                adjncy,
-                vwgt,
-                vsize,
-                adjwgt,
-                nparts,
-                tpwgts,
-                ubvec,
-                options,
+                &mut self.ncon,
+                self.xadj.as_mut_ptr(),
+                self.adjncy.as_mut_ptr(),
+                self.vwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.vsize.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.adjwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                &mut self.nparts,
+                self.tpwgts.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.ubvec.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.options.as_mut_ptr(),
                 edgecut.as_mut_ptr(),
                 part,
             )
@@ -677,39 +617,20 @@ impl<'a> Mesh<'a> {
             "npart.len() must be equal to the number of nodes",
         );
 
-        let ne = &mut (self.eptr.len() as Idx - 1) as *mut Idx;
-        let nn = &mut self.nn as *mut Idx;
-        let vwgt = if let Some(vwgt) = self.vwgt {
-            vwgt.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let vsize = if let Some(vsize) = self.vsize {
-            vsize.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let ncommon = &mut self.ncommon as *mut Idx;
-        let nparts = &mut self.nparts as *mut Idx;
-        let tpwgts = if let Some(tpwgts) = self.tpwgts {
-            tpwgts.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let options = self.options.as_mut_ptr();
+        let ne = &mut (self.eptr.len() as Idx - 1);
         let mut edgecut = mem::MaybeUninit::uninit();
         unsafe {
             m::METIS_PartMeshDual(
                 ne,
-                nn,
+                &mut self.nn,
                 self.eptr.as_mut_ptr(),
                 self.eind.as_mut_ptr(),
-                vwgt,
-                vsize,
-                ncommon,
-                nparts,
-                tpwgts,
-                options,
+                self.vwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.vsize.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                &mut self.ncommon,
+                &mut self.nparts,
+                self.tpwgts.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.options.as_mut_ptr(),
                 edgecut.as_mut_ptr(),
                 epart.as_mut_ptr(),
                 npart.as_mut_ptr(),
@@ -745,37 +666,19 @@ impl<'a> Mesh<'a> {
             "npart.len() must be equal to the number of nodes",
         );
 
-        let ne = &mut (self.eptr.len() as Idx - 1) as *mut Idx;
-        let nn = &mut self.nn as *mut Idx;
-        let vwgt = if let Some(vwgt) = self.vwgt {
-            vwgt.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let vsize = if let Some(vsize) = self.vsize {
-            vsize.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let nparts = &mut self.nparts as *mut Idx;
-        let tpwgts = if let Some(tpwgts) = self.tpwgts {
-            tpwgts.as_mut_ptr()
-        } else {
-            ptr::null_mut()
-        };
-        let options = self.options.as_mut_ptr();
+        let ne = &mut (self.eptr.len() as Idx - 1);
         let mut edgecut = mem::MaybeUninit::uninit();
         unsafe {
             m::METIS_PartMeshNodal(
                 ne,
-                nn,
+                &mut self.nn,
                 self.eptr.as_mut_ptr(),
                 self.eind.as_mut_ptr(),
-                vwgt,
-                vsize,
-                nparts,
-                tpwgts,
-                options,
+                self.vwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.vsize.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                &mut self.nparts,
+                self.tpwgts.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
+                self.options.as_mut_ptr(),
                 edgecut.as_mut_ptr(),
                 epart.as_mut_ptr(),
                 npart.as_mut_ptr(),
@@ -839,7 +742,7 @@ pub fn mesh_to_dual(
     let eptr_len = Idx::try_from(eptr.len()).expect("eptr array larger than Idx::MAX");
     assert_ne!(eptr_len, 0, "eptr cannot be empty");
 
-    let ne = &mut (eptr_len - 1) as *mut Idx;
+    let ne = &mut (eptr_len - 1);
     let mut xadj = mem::MaybeUninit::uninit();
     let mut adjncy = mem::MaybeUninit::uninit();
 
@@ -848,11 +751,11 @@ pub fn mesh_to_dual(
     unsafe {
         m::METIS_MeshToDual(
             ne,
-            &mut nn as *mut Idx,
+            &mut nn,
             eptr.as_mut_ptr(),
             eind.as_mut_ptr(),
-            &mut ncommon as *mut Idx,
-            &mut numflag as *mut Idx,
+            &mut ncommon,
+            &mut numflag,
             xadj.as_mut_ptr(),
             adjncy.as_mut_ptr(),
         )
