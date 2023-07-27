@@ -11,6 +11,7 @@ use std::fmt;
 use std::mem;
 use std::os;
 use std::ptr;
+use std::result::Result as StdResult;
 use std::slice;
 
 pub mod option;
@@ -47,8 +48,14 @@ pub enum Error {
 
 impl std::error::Error for Error {}
 
-impl From<NewError> for Error {
-    fn from(_: NewError) -> Self {
+impl From<NewGraphError> for Error {
+    fn from(_: NewGraphError) -> Self {
+        Self::Input
+    }
+}
+
+impl From<NewMeshError> for Error {
+    fn from(_: NewMeshError) -> Self {
         Self::Input
     }
 }
@@ -64,7 +71,7 @@ impl fmt::Display for Error {
 }
 
 /// The result of a partitioning.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = StdResult<T, Error>;
 
 trait ErrorCode {
     /// Makes a [`Result`] from a return code (int) from METIS.
@@ -83,53 +90,62 @@ impl ErrorCode for m::rstatus_et {
     }
 }
 
+/// Error raised when the graph data fed to [`Graph::new`] cannot be safely
+/// passed to METIS.
+///
+/// Graph data must follow the format described in [`Graph::new`].
 #[derive(Debug)]
-enum NewErrorKind {
-    InvalidNumberOfConstraints,
-    InvalidNumberOfParts,
-    XadjIsEmpty,
-    XadjIsTooLarge,
-    XadjIsNotSorted,
-    InvalidLastXadj,
-    BadAdjncyLength,
-    AdjncyOutOfBounds,
+pub struct InvalidGraphError {
+    msg: &'static str,
 }
 
-impl fmt::Display for NewErrorKind {
+impl fmt::Display for InvalidGraphError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.msg.fmt(f)
+    }
+}
+
+/// Error type returned by [`Graph::new`].
+///
+/// Unlike [`Error`], this error originates from the Rust bindings.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum NewGraphError {
+    /// `ncon` must be greater than 1.
+    NoConstraints,
+
+    /// `nparts` must be greater than 1.
+    NoParts,
+
+    /// Graph is too large. One of the array's length doesn't fit into [`Idx`].
+    TooLarge,
+
+    /// The input arrays are malformed and cannot be safely passed to METIS.
+    ///
+    /// Note that these bindings do not check for all the invariants. Some might
+    /// be raised during [`Graph::part_recursive`] and [`Graph::part_kway`] as
+    /// [`Error::Input`].
+    InvalidGraph(InvalidGraphError),
+}
+
+impl fmt::Display for NewGraphError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidNumberOfConstraints => write!(f, "ncon must be strictly positive"),
-            Self::InvalidNumberOfParts => write!(f, "nparts must be strictly positive"),
-            Self::XadjIsEmpty => write!(f, "xadj/eptr is empty"),
-            Self::XadjIsTooLarge => write!(f, "xadj/eptr's length cannot be held by an Idx"),
-            Self::XadjIsNotSorted => write!(f, "xadj/eptr is not sorted"),
-            Self::InvalidLastXadj => write!(f, "the last element of xadj/eptr is invalid"),
-            Self::BadAdjncyLength => write!(
-                f,
-                "the last element of xadj/eptr must be adjncy/eind's length"
-            ),
-
-            Self::AdjncyOutOfBounds => write!(f, "an element of adjncy/eind is out of bounds"),
+            Self::NoConstraints => write!(f, "there must be at least one constraint"),
+            Self::NoParts => write!(f, "there must be at least one part"),
+            Self::TooLarge => write!(f, "graph is too large"),
+            Self::InvalidGraph(err) => write!(f, "invalid graph structure: {err}"),
         }
     }
 }
 
-/// Error type returned by [`Graph::new`] and [`Mesh::new`].
-///
-/// This error means the input arrays are malformed and cannot be safely passed
-/// to METIS.
-#[derive(Debug)]
-pub struct NewError {
-    kind: NewErrorKind,
-}
+impl std::error::Error for NewGraphError {}
 
-impl fmt::Display for NewError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.kind.fmt(f)
+impl NewGraphError {
+    fn msg(msg: &'static str) -> Self {
+        Self::InvalidGraph(InvalidGraphError { msg })
     }
 }
-
-impl std::error::Error for NewError {}
 
 /// Builder structure to setup a graph partition computation.
 ///
@@ -283,53 +299,44 @@ impl<'a> Graph<'a> {
         nparts: Idx,
         xadj: &'a mut [Idx],
         adjncy: &'a mut [Idx],
-    ) -> std::result::Result<Graph<'a>, NewError> {
+    ) -> StdResult<Graph<'a>, NewGraphError> {
         if ncon <= 0 {
-            return Err(NewError {
-                kind: NewErrorKind::InvalidNumberOfConstraints,
-            });
+            return Err(NewGraphError::NoConstraints);
         }
         if nparts <= 0 {
-            return Err(NewError {
-                kind: NewErrorKind::InvalidNumberOfParts,
-            });
+            return Err(NewGraphError::NoParts);
         }
 
-        let last_xadj = xadj.last().ok_or(NewError {
-            kind: NewErrorKind::XadjIsEmpty,
-        })?;
-        let last_xadj = usize::try_from(*last_xadj).map_err(|_| NewError {
-            kind: NewErrorKind::InvalidLastXadj,
-        })?;
-        if last_xadj != adjncy.len() {
-            return Err(NewError {
-                kind: NewErrorKind::BadAdjncyLength,
-            });
-        }
-
-        let mut prev = 0;
-        for x in &*xadj {
-            if prev > *x {
-                return Err(NewError {
-                    kind: NewErrorKind::XadjIsNotSorted,
-                });
-            }
-            prev = *x;
+        let last_xadj = *xadj
+            .last()
+            .ok_or(NewGraphError::msg("index list is empty"))?;
+        let adjncy_len = Idx::try_from(adjncy.len()).map_err(|_| NewGraphError::TooLarge)?;
+        if last_xadj != adjncy_len {
+            return Err(NewGraphError::msg(
+                "length mismatch between index and adjacency lists",
+            ));
         }
 
         let nvtxs = match Idx::try_from(xadj.len()) {
             Ok(xadj_len) => xadj_len - 1,
             Err(_) => {
-                return Err(NewError {
-                    kind: NewErrorKind::XadjIsTooLarge,
-                })
+                return Err(NewGraphError::TooLarge);
             }
         };
+
+        let mut prev = 0;
+        for x in &*xadj {
+            if prev > *x {
+                return Err(NewGraphError::msg("index list is not sorted"));
+            }
+            prev = *x;
+        }
+
         for a in &*adjncy {
             if *a < 0 || *a >= nvtxs {
-                return Err(NewError {
-                    kind: NewErrorKind::AdjncyOutOfBounds,
-                });
+                return Err(NewGraphError::msg(
+                    "some values in the adjacency list are out of bounds",
+                ));
             }
         }
 
@@ -651,42 +658,94 @@ impl<'a> Graph<'a> {
     }
 }
 
-/// Check the given mesh structure for any construct that might make METIS
-/// segfault or otherwise corrupt memory.
+/// Error raised when the mesh data fed to [`Mesh::new`] cannot be safely passed
+/// to METIS.
 ///
-/// Returns the number of nodes in the mesh.
-fn check_mesh_structure(eptr: &[Idx], eind: &[Idx]) -> std::result::Result<Idx, NewError> {
+/// Mesh data must follow the format described in [`Mesh::new`].
+#[derive(Debug)]
+pub struct InvalidMeshError {
+    msg: &'static str,
+}
+
+impl fmt::Display for InvalidMeshError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.msg.fmt(f)
+    }
+}
+
+/// Error type returned by [`Mesh::new`].
+///
+/// Unlike [`Error`], this error originates from the Rust bindings.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum NewMeshError {
+    /// `nparts` must be greater than 1.
+    NoParts,
+
+    /// Mesh is too large. One of the array's length doesn't fit into [`Idx`].
+    TooLarge,
+
+    /// The input arrays are malformed and cannot be safely passed to METIS.
+    ///
+    /// Note that these bindings do not check for all the invariants. Some might
+    /// be raised during [`Mesh::part_dual`] and [`Mesh::part_nodal`] as
+    /// [`Error::Input`].
+    InvalidMesh(InvalidMeshError),
+}
+
+impl fmt::Display for NewMeshError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoParts => write!(f, "there must be at least one part"),
+            Self::TooLarge => write!(f, "mesh is too large"),
+            Self::InvalidMesh(err) => write!(f, "invalid mesh structure: {err}"),
+        }
+    }
+}
+
+impl std::error::Error for NewMeshError {}
+
+impl NewMeshError {
+    fn msg(msg: &'static str) -> Self {
+        Self::InvalidMesh(InvalidMeshError { msg })
+    }
+}
+
+/// Returns the number of elements and the number of nodes in the mesh.
+fn check_mesh_structure(eptr: &[Idx], eind: &[Idx]) -> StdResult<(Idx, Idx), NewMeshError> {
+    let last_eptr = *eptr
+        .last()
+        .ok_or(NewMeshError::msg("element index is empty"))?;
+    let eind_len = Idx::try_from(eind.len()).map_err(|_| NewMeshError::TooLarge)?;
+    if last_eptr != eind_len {
+        return Err(NewMeshError::msg(
+            "length mismatch between element and node indices",
+        ));
+    }
+
+    let ne = Idx::try_from(eptr.len()).map_err(|_| NewMeshError::TooLarge)? - 1;
+
     let mut prev = 0;
     for x in eptr {
         if prev > *x {
-            return Err(NewError {
-                kind: NewErrorKind::XadjIsNotSorted,
-            });
+            return Err(NewMeshError::msg("element index is not sorted"));
         }
         prev = *x;
-    }
-    let last_eptr = usize::try_from(prev).map_err(|_| NewError {
-        kind: NewErrorKind::InvalidLastXadj,
-    })?;
-    if last_eptr != eind.len() {
-        return Err(NewError {
-            kind: NewErrorKind::BadAdjncyLength,
-        });
     }
 
     let mut max_node = 0;
     for a in eind {
         if *a < 0 {
-            return Err(NewError {
-                kind: NewErrorKind::AdjncyOutOfBounds,
-            });
+            return Err(NewMeshError::msg(
+                "values in the node index are out of bounds",
+            ));
         }
         if *a > max_node {
             max_node = *a;
         }
     }
 
-    Ok(max_node + 1)
+    Ok((ne, max_node + 1))
 }
 
 /// Builder structure to setup a mesh partition computation.
@@ -769,13 +828,11 @@ impl<'a> Mesh<'a> {
         nparts: Idx,
         eptr: &'a mut [Idx],
         eind: &'a mut [Idx],
-    ) -> std::result::Result<Mesh<'a>, NewError> {
+    ) -> StdResult<Mesh<'a>, NewMeshError> {
         if nparts <= 0 {
-            return Err(NewError {
-                kind: NewErrorKind::InvalidNumberOfParts,
-            });
+            return Err(NewMeshError::NoParts);
         }
-        let nn = check_mesh_structure(&*eptr, &*eind)?;
+        let (_ne, nn) = check_mesh_structure(&*eptr, &*eind)?;
         Ok(unsafe { Mesh::new_unchecked(nn, nparts, eptr, eind) })
     }
 
@@ -1066,15 +1123,12 @@ impl Drop for Dual {
 
 /// Generate the dual graph of a mesh.
 ///
-/// # Panics
+/// # Errors
 ///
-/// This function panics if:
-///
-/// - `eptr` is empty, or
-/// - `eptr`'s length doesn't fit in [`Idx`].
+/// This function returns an error if `eptr` and `eind` don't follow the mesh
+/// format given in [`Mesh::new`].
 pub fn mesh_to_dual(eptr: &mut [Idx], eind: &mut [Idx], mut ncommon: Idx) -> Result<Dual> {
-    let nn = &mut check_mesh_structure(&*eptr, &*eind)?;
-    let ne = &mut (eptr.len() as Idx - 1); // `as` cast already checked by `check_mesh_structure`
+    let (mut ne, mut nn) = check_mesh_structure(&*eptr, &*eind)?;
     let mut xadj = mem::MaybeUninit::uninit();
     let mut adjncy = mem::MaybeUninit::uninit();
     let mut numbering_flag = 0;
@@ -1083,8 +1137,8 @@ pub fn mesh_to_dual(eptr: &mut [Idx], eind: &mut [Idx], mut ncommon: Idx) -> Res
     // SAFETY: hopefully those arrays are of correct length.
     unsafe {
         m::METIS_MeshToDual(
-            ne,
-            nn,
+            &mut ne,
+            &mut nn,
             eptr.as_mut_ptr(),
             eind.as_mut_ptr(),
             &mut ncommon,
