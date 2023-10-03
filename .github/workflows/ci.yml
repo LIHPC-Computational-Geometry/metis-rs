@@ -25,7 +25,7 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - run: sudo apt-get -y install libmetis-dev libclang-dev
+      - run: sudo apt-get -y install libclang-dev
       - uses: actions-rs/cargo@v1
         with:
           command: check
@@ -45,7 +45,7 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - run: sudo apt-get -y install libmetis-dev libclang-dev
+      - run: sudo apt-get -y install libclang-dev
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -77,7 +77,7 @@ jobs:
           toolchain: stable
           override: true
           components: clippy
-      - run: sudo apt-get -y install libmetis-dev libclang-dev
+      - run: sudo apt-get -y install libclang-dev
       - uses: actions-rs/cargo@v1
         with:
           command: clippy

@@ -13,3 +13,5 @@ keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 
 [build-dependencies]
 bindgen = { version = "0.66", default-features = false, features = ["runtime"] }
+cc = { version = "1", features = ["parallel"] }
+
