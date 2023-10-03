@@ -3,6 +3,10 @@
 //! For options that take an integer value, should this value be negative, the
 //! default will be used, if any.
 
+// Idx and Real can be 32 or 64 bits. Make sure to suppress warnings when
+// casts turn out to be trivial.
+#![allow(trivial_numeric_casts)]
+
 use crate::m;
 use crate::Idx;
 
