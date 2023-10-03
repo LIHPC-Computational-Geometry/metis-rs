@@ -14,5 +14,13 @@ keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+
+# Build and statically link to METIS and GKLib. By default metis-rs expects an
+# existing METIS install and links dynamically to it.
+vendored = ["metis-sys/vendored"]
+
+
 [dependencies]
 metis-sys = { version = "0.2", path = "metis-sys" }

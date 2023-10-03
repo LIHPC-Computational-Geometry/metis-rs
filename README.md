@@ -2,16 +2,27 @@
 
 Idiomatic bindings to [libmetis][METIS], a graph and mesh partitioner.
 
-## Building
+## Usage
 
-Prerequisites:
+metis-rs requires clang v5.0 or above and Rust v1.61.0 or above.
 
-- METIS
-- clang v5.0 or above
-- Rust v1.61.0 or above
+```sh
+# Use the vendored feature to build and link
+# statically to METIS. This avoids issues with
+# old or otherwise problematic installations.
+cargo add metis --features vendored
+```
 
-Bindings to METIS are made on the fly.  If METIS is installed in a non-standard
-location, please use the following commands:
+Features:
+
+- `vendored`: build METIS from source and link to it statically. Otherwise,
+  metis-rs looks for an existing installation and links to it dynamically.
+
+### When your METIS install is not found
+
+If the vendored feature is disabled (the default), and if METIS is installed in
+a non-standard location, you have to set the `CPATH` and `RUSTFLAGS` environment
+variables like so:
 
     export METISDIR=path/to/your/metis/installation
     export CPATH="$METISDIR/include"
@@ -21,12 +32,11 @@ The environment variable `$METISDIR` must point to a directory containing a
 `lib/` and a `include/` directory containing the shared libraries and the
 headers of METIS, respectively.
 
-Once these variables are set, you can build the bindings with `cargo build`.
-
 ### Build the documentation
 
-If your METIS installation lies in a non-standard path, you will need to set
-the `RUSTDOCFLAGS` environment variable to build the documentation:
+If the vendored feature is disabled (the default), and if METIS is installed in
+a non-standard location, the additional `RUSTDOCFLAGS` environment variable
+needs to be set.
 
     export RUSTDOCFLAGS="-L$METISDIR/lib"
 

@@ -11,5 +11,14 @@ categories = ["external-ffi-bindings", "mathematics"]
 keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 
 
+[features]
+default = []
+
+# Build and statically link to METIS and GKLib. By default metis-sys expects an
+# existing METIS install and links dynamically to it.
+vendored = ["dep:cc"]
+
+
 [build-dependencies]
 bindgen = { version = "0.66", default-features = false, features = ["runtime"] }
+cc = { version = "1", features = ["parallel"], optional = true }
