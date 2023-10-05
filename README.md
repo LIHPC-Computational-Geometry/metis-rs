@@ -8,7 +8,7 @@ Prerequisites:
 
 - METIS
 - clang v5.0 or above
-- Rust v1.60.0 or above
+- Rust v1.61.0 or above
 
 Bindings to METIS are made on the fly.  If METIS is installed in a non-standard
 location, please use the following commands:
