@@ -103,12 +103,18 @@ fn build_lib() -> bindgen::Builder {
         build
             .define("USE_GKREGEX", None)
             .define("WIN32", None)
-            .define("__thread", Some("__declspec(thread)"));
+            .define("__thread", Some("__declspec(thread)"))
+            // .define("NDEBUG", None)
+            // .define("NDEBUG2", None)
+            ;
+
+        build.opt_level(2);
 
         if target.contains("msvc") {
             build
                 .define("MSC", None)
-                .define("_CRT_SECURE_NO_WARNINGS", None);
+                .define("_CRT_SECURE_NO_WARNINGS", None)
+                .flag("/Ob2");
 
             // force inclusion of math.h to make sure INFINITY is defined before gk_arch.h is parsed
             build.flag("/FImath.h");

@@ -4,7 +4,7 @@ Idiomatic bindings to [libmetis][METIS], a graph and mesh partitioner.
 
 ## Usage
 
-metis-rs requires clang v5.0 or above and Rust v1.61.0 or above.
+metis-rs requires clang v5.0 or above and Rust v1.60.0 or above.
 
 ```sh
 # Use the vendored feature to build and link
