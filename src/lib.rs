@@ -76,6 +76,11 @@ impl ErrorCode for m::rstatus_et {
     }
 }
 
+/// Helper function to convert an immutable slice ref to a mutable pointer
+unsafe fn slice_to_mut_ptr<T>(slice: &[T]) -> *mut T {
+    slice.as_ptr() as *mut T
+}
+
 /// Builder structure to setup a graph partition computation.
 ///
 /// This structure holds the required arguments for METIS to compute a
@@ -112,39 +117,39 @@ pub struct Graph<'a> {
     nparts: Idx,
 
     /// The adjency structure of the graph (part 1).
-    xadj: &'a mut [Idx],
+    xadj: &'a [Idx],
 
     /// The adjency structure of the graph (part 2).
     ///
     /// Required size: xadj.last()
-    adjncy: &'a mut [Idx],
+    adjncy: &'a [Idx],
 
     /// The computational weights of the vertices.
     ///
     /// Required size: ncon * (xadj.len()-1)
-    vwgt: Option<&'a mut [Idx]>,
+    vwgt: Option<&'a [Idx]>,
 
     /// The communication weights of the vertices.
     ///
     /// Required size: xadj.len()-1
-    vsize: Option<&'a mut [Idx]>,
+    vsize: Option<&'a [Idx]>,
 
     /// The weight of the edges.
     ///
     /// Required size: xadj.last()
-    adjwgt: Option<&'a mut [Idx]>,
+    adjwgt: Option<&'a [Idx]>,
 
     /// The target partition weights of the vertices.
     ///
     /// If `None` then the graph is equally divided among the partitions.
     ///
     /// Required size: ncon * nparts
-    tpwgts: Option<&'a mut [Real]>,
+    tpwgts: Option<&'a [Real]>,
 
     /// Imbalance tolerances for each constraint.
     ///
     /// Required size: ncon
-    ubvec: Option<&'a mut [Real]>,
+    ubvec: Option<&'a [Real]>,
 
     /// Fine-tuning parameters.
     options: [Idx; NOPTIONS],
@@ -167,7 +172,7 @@ impl<'a> Graph<'a> {
     /// While nothing should be modified by the [`Graph`] structure, METIS
     /// doesn't specify any `const` modifier, so everything must be mutable on
     /// Rust's side.
-    pub fn new(ncon: Idx, nparts: Idx, xadj: &'a mut [Idx], adjncy: &'a mut [Idx]) -> Graph<'a> {
+    pub fn new(ncon: Idx, nparts: Idx, xadj: &'a [Idx], adjncy: &'a [Idx]) -> Graph<'a> {
         assert!(0 < ncon, "ncon must be strictly greater than zero");
         assert!(0 < nparts, "nparts must be strictly greater than zero");
         let _ = Idx::try_from(xadj.len()).expect("xadj array larger than Idx::MAX");
@@ -200,7 +205,7 @@ impl<'a> Graph<'a> {
     ///
     /// This function panics if the length of `vwgt` is not `ncon` times the
     /// number of vertices.
-    pub fn set_vwgt(mut self, vwgt: &'a mut [Idx]) -> Graph<'a> {
+    pub fn set_vwgt(mut self, vwgt: &'a [Idx]) -> Graph<'a> {
         let vwgt_len = Idx::try_from(vwgt.len()).expect("vwgt array too large");
         assert_eq!(vwgt_len, self.ncon * (self.xadj.len() as Idx - 1));
         self.vwgt = Some(vwgt);
@@ -218,7 +223,7 @@ impl<'a> Graph<'a> {
     ///
     /// This function panics if the length of `vsize` is not the number of
     /// vertices.
-    pub fn set_vsize(mut self, vsize: &'a mut [Idx]) -> Graph<'a> {
+    pub fn set_vsize(mut self, vsize: &'a [Idx]) -> Graph<'a> {
         let vsize_len = Idx::try_from(vsize.len()).expect("vsize array too large");
         assert_eq!(vsize_len, self.xadj.len() as Idx - 1);
         self.vsize = Some(vsize);
@@ -235,7 +240,7 @@ impl<'a> Graph<'a> {
     ///
     /// This function panics if the length of `adjwgt` is not equal to the
     /// length of `adjncy`.
-    pub fn set_adjwgt(mut self, adjwgt: &'a mut [Idx]) -> Graph<'a> {
+    pub fn set_adjwgt(mut self, adjwgt: &'a [Idx]) -> Graph<'a> {
         let adjwgt_len = Idx::try_from(adjwgt.len()).expect("adjwgt array too large");
         assert_eq!(adjwgt_len, *self.xadj.last().unwrap());
         self.adjwgt = Some(adjwgt);
@@ -255,7 +260,7 @@ impl<'a> Graph<'a> {
     ///
     /// This function panics if the length of `tpwgts` is not equal to `ncon`
     /// times `nparts`.
-    pub fn set_tpwgts(mut self, tpwgts: &'a mut [Real]) -> Graph<'a> {
+    pub fn set_tpwgts(mut self, tpwgts: &'a [Real]) -> Graph<'a> {
         let tpwgts_len = Idx::try_from(tpwgts.len()).expect("tpwgts array too large");
         assert_eq!(tpwgts_len, self.ncon * self.nparts);
         self.tpwgts = Some(tpwgts);
@@ -273,7 +278,7 @@ impl<'a> Graph<'a> {
     /// # Panics
     ///
     /// This function panics if the length of `ubvec` is not equal to `ncon`.
-    pub fn set_ubvec(mut self, ubvec: &'a mut [Real]) -> Graph<'a> {
+    pub fn set_ubvec(mut self, ubvec: &'a [Real]) -> Graph<'a> {
         let ubvec_len = Idx::try_from(ubvec.len()).expect("ubvec array too large");
         assert_eq!(ubvec_len, self.ncon);
         self.ubvec = Some(ubvec);
@@ -289,6 +294,9 @@ impl<'a> Graph<'a> {
     /// not all are applicable to a given partitioning method.  Refer to the
     /// documentation of METIS ([link]) for more info on this.
     ///
+    /// Note that setting METIS_OPTION_NUMBERING to 1 is unsupported for safety
+    /// reasons.
+    ///
     /// [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
     ///
     /// # Example
@@ -298,8 +306,8 @@ impl<'a> Graph<'a> {
     /// # use metis::Graph;
     /// use metis::option::Opt as _;
     ///
-    /// let xadj = &mut [0, 1, 2];
-    /// let adjncy = &mut [1, 0];
+    /// let xadj = &[0, 1, 2];
+    /// let adjncy = &[1, 0];
     /// let mut part = [0, 0];
     ///
     /// // -1 is the default value.
@@ -318,6 +326,12 @@ impl<'a> Graph<'a> {
     /// # }
     /// ```
     pub fn set_options(mut self, options: &[Idx; NOPTIONS]) -> Graph<'a> {
+        // Make sure Fortran numbering is not set in the options, as that will change the input data.
+        // Panic for now, until there are appropriate checked and unchecked versions of the API
+        if options[m::moptions_et_METIS_OPTION_NUMBERING as usize] == 1 {
+            panic!("Changing the numbering scheme for METIS is unsupported");
+        }
+
         self.options.copy_from_slice(options);
         self
     }
@@ -338,8 +352,8 @@ impl<'a> Graph<'a> {
     /// ```rust
     /// # fn main() -> Result<(), metis::Error> {
     /// # use metis::Graph;
-    /// let xadj = &mut [0, 1, 2];
-    /// let adjncy = &mut [1, 0];
+    /// let xadj = &[0, 1, 2];
+    /// let adjncy = &[1, 0];
     /// let mut part = [0, 0];
     ///
     /// Graph::new(1, 2, xadj, adjncy)
@@ -370,7 +384,7 @@ impl<'a> Graph<'a> {
     ///
     /// This function panics if the length of `part` is not the number of
     /// vertices.
-    pub fn part_recursive(mut self, part: &mut [Idx]) -> Result<Idx> {
+    pub fn part_recursive(self, part: &mut [Idx]) -> Result<Idx> {
         let part_len = Idx::try_from(part.len()).expect("part array larger than Idx::MAX");
         assert_eq!(
             part_len,
@@ -378,22 +392,27 @@ impl<'a> Graph<'a> {
             "part.len() must be equal to the number of vertices",
         );
 
-        let nvtxs = &mut (self.xadj.len() as Idx - 1);
+        let nvtxs = self.xadj.len() as Idx - 1;
         let mut edgecut = mem::MaybeUninit::uninit();
         let part = part.as_mut_ptr();
         unsafe {
             m::METIS_PartGraphRecursive(
-                nvtxs,
-                &mut self.ncon,
-                self.xadj.as_mut_ptr(),
-                self.adjncy.as_mut_ptr(),
-                self.vwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.vsize.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.adjwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                &mut self.nparts,
-                self.tpwgts.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.ubvec.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.options.as_mut_ptr(),
+                &nvtxs as *const Idx as *mut Idx,
+                &self.ncon as *const Idx as *mut Idx,
+                slice_to_mut_ptr(self.xadj),
+                slice_to_mut_ptr(self.adjncy),
+                self.vwgt
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                self.vsize
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                self.adjwgt
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                &self.nparts as *const Idx as *mut Idx,
+                self.tpwgts
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                self.ubvec
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                slice_to_mut_ptr(&self.options),
                 edgecut.as_mut_ptr(),
                 part,
             )
@@ -413,7 +432,7 @@ impl<'a> Graph<'a> {
     ///
     /// This function panics if the length of `part` is not the number of
     /// vertices.
-    pub fn part_kway(mut self, part: &mut [Idx]) -> Result<Idx> {
+    pub fn part_kway(self, part: &mut [Idx]) -> Result<Idx> {
         let part_len = Idx::try_from(part.len()).expect("part array larger than Idx::MAX");
         assert_eq!(
             part_len,
@@ -421,22 +440,27 @@ impl<'a> Graph<'a> {
             "part.len() must be equal to the number of vertices",
         );
 
-        let nvtxs = &mut (self.xadj.len() as Idx - 1);
+        let nvtxs = self.xadj.len() as Idx - 1;
         let mut edgecut = mem::MaybeUninit::uninit();
         let part = part.as_mut_ptr();
         unsafe {
             m::METIS_PartGraphKway(
-                nvtxs,
-                &mut self.ncon,
-                self.xadj.as_mut_ptr(),
-                self.adjncy.as_mut_ptr(),
-                self.vwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.vsize.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.adjwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                &mut self.nparts,
-                self.tpwgts.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.ubvec.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.options.as_mut_ptr(),
+                &nvtxs as *const Idx as *mut Idx,
+                &self.ncon as *const Idx as *mut Idx,
+                slice_to_mut_ptr(self.xadj),
+                slice_to_mut_ptr(self.adjncy),
+                self.vwgt
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                self.vsize
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                self.adjwgt
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                &self.nparts as *const Idx as *mut Idx,
+                self.tpwgts
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                self.ubvec
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                slice_to_mut_ptr(&self.options),
                 edgecut.as_mut_ptr(),
                 part,
             )
@@ -467,25 +491,25 @@ pub struct Mesh<'a> {
     /// dual graph.
     ncommon: Idx,
 
-    eptr: &'a mut [Idx], // mesh representation
-    eind: &'a mut [Idx], // mesh repr
+    eptr: &'a [Idx], // mesh representation
+    eind: &'a [Idx], // mesh repr
 
     /// The computational weights of the elements.
     ///
     /// Required size: ne
-    vwgt: Option<&'a mut [Idx]>,
+    vwgt: Option<&'a [Idx]>,
 
     /// The communication weights of the elements.
     ///
     /// Required size: ne
-    vsize: Option<&'a mut [Idx]>,
+    vsize: Option<&'a [Idx]>,
 
     /// The target partition weights of the elements.
     ///
     /// If `None` then the mesh is equally divided among the partitions.
     ///
     /// Required size: nparts
-    tpwgts: Option<&'a mut [Real]>,
+    tpwgts: Option<&'a [Real]>,
 
     /// Fine-tuning parameters.
     options: [Idx; NOPTIONS],
@@ -508,7 +532,7 @@ impl<'a> Mesh<'a> {
     /// While nothing should be modified by the [`Mesh`] structure, METIS
     /// doesn't specify any `const` modifier, so everything must be mutable on
     /// Rust's side.
-    pub fn new(nn: Idx, nparts: Idx, eptr: &'a mut [Idx], eind: &'a mut [Idx]) -> Mesh<'a> {
+    pub fn new(nn: Idx, nparts: Idx, eptr: &'a [Idx], eind: &'a [Idx]) -> Mesh<'a> {
         assert!(0 < nn, "nn must be strictly greater than zero");
         assert!(0 < nparts, "nn must be strictly greater than zero");
         let _ = Idx::try_from(eptr.len()).expect("eptr array larger than Idx::MAX");
@@ -539,7 +563,7 @@ impl<'a> Mesh<'a> {
     ///
     /// This function panics if the length of `vwgt` is not the number of
     /// elements.
-    pub fn set_vwgt(mut self, vwgt: &'a mut [Idx]) -> Mesh<'a> {
+    pub fn set_vwgt(mut self, vwgt: &'a [Idx]) -> Mesh<'a> {
         let vwgt_len = Idx::try_from(vwgt.len()).expect("vwgt array too large");
         assert_eq!(vwgt_len, self.eptr.len() as Idx - 1);
         self.vwgt = Some(vwgt);
@@ -554,7 +578,7 @@ impl<'a> Mesh<'a> {
     ///
     /// This function panics if the length of `vsize` is not the number of
     /// elements.
-    pub fn set_vsize(mut self, vsize: &'a mut [Idx]) -> Mesh<'a> {
+    pub fn set_vsize(mut self, vsize: &'a [Idx]) -> Mesh<'a> {
         let vsize_len = Idx::try_from(vsize.len()).expect("vsize array too large");
         assert_eq!(vsize_len, self.eptr.len() as Idx - 1);
         self.vsize = Some(vsize);
@@ -570,7 +594,7 @@ impl<'a> Mesh<'a> {
     /// # Panics
     ///
     /// This function panics if the length of `tpwgts` is not equal to `nparts`.
-    pub fn set_tpwgts(mut self, tpwgts: &'a mut [Real]) -> Mesh<'a> {
+    pub fn set_tpwgts(mut self, tpwgts: &'a [Real]) -> Mesh<'a> {
         let tpwgts_len = Idx::try_from(tpwgts.len()).expect("tpwgts array too large");
         assert_eq!(tpwgts_len, self.nparts);
         self.tpwgts = Some(tpwgts);
@@ -586,10 +610,19 @@ impl<'a> Mesh<'a> {
     /// not all are applicable to a given partitioning method.  Refer to the
     /// documentation of METIS ([link]) for more info on this.
     ///
+    /// Note that setting METIS_OPTION_NUMBERING to 1 is unsupported for safety
+    /// reasons.
+    ///
     /// See [`Graph::set_options`] for a usage example.
     ///
     /// [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
     pub fn set_options(mut self, options: &[Idx; NOPTIONS]) -> Mesh<'a> {
+        // Make sure Fortran numbering is not set in the options, as that will change the input data.
+        // Panic for now, until there are appropriate checked and unchecked versions of the API
+        if options[m::moptions_et_METIS_OPTION_NUMBERING as usize] == 1 {
+            panic!("Changing the numbering scheme for METIS is unsupported");
+        }
+
         self.options.copy_from_slice(options);
         self
     }
@@ -625,7 +658,7 @@ impl<'a> Mesh<'a> {
     ///
     /// This function panics if the length of `epart` is not the number of
     /// elements, or if `nparts`'s is not the number of nodes.
-    pub fn part_dual(mut self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
+    pub fn part_dual(self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
         let epart_len = Idx::try_from(epart.len()).expect("epart array larger than Idx::MAX");
         assert_eq!(
             epart_len,
@@ -638,20 +671,23 @@ impl<'a> Mesh<'a> {
             "npart.len() must be equal to the number of nodes",
         );
 
-        let ne = &mut (self.eptr.len() as Idx - 1);
+        let ne = self.eptr.len() as Idx - 1;
         let mut edgecut = mem::MaybeUninit::uninit();
         unsafe {
             m::METIS_PartMeshDual(
-                ne,
-                &mut self.nn,
-                self.eptr.as_mut_ptr(),
-                self.eind.as_mut_ptr(),
-                self.vwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.vsize.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                &mut self.ncommon,
-                &mut self.nparts,
-                self.tpwgts.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.options.as_mut_ptr(),
+                &ne as *const Idx as *mut Idx,
+                &self.nn as *const Idx as *mut Idx,
+                slice_to_mut_ptr(self.eptr),
+                slice_to_mut_ptr(self.eind),
+                self.vwgt
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                self.vsize
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                &self.ncommon as *const Idx as *mut Idx,
+                &self.nparts as *const Idx as *mut Idx,
+                self.tpwgts
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                slice_to_mut_ptr(&self.options),
                 edgecut.as_mut_ptr(),
                 epart.as_mut_ptr(),
                 npart.as_mut_ptr(),
@@ -674,7 +710,7 @@ impl<'a> Mesh<'a> {
     ///
     /// This function panics if the length of `epart` is not the number of
     /// elements, or if `nparts`'s is not the number of nodes.
-    pub fn part_nodal(mut self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
+    pub fn part_nodal(self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
         let epart_len = Idx::try_from(epart.len()).expect("epart array larger than Idx::MAX");
         assert_eq!(
             epart_len,
@@ -687,19 +723,22 @@ impl<'a> Mesh<'a> {
             "npart.len() must be equal to the number of nodes",
         );
 
-        let ne = &mut (self.eptr.len() as Idx - 1);
+        let ne = self.eptr.len() as Idx - 1;
         let mut edgecut = mem::MaybeUninit::uninit();
         unsafe {
             m::METIS_PartMeshNodal(
-                ne,
-                &mut self.nn,
-                self.eptr.as_mut_ptr(),
-                self.eind.as_mut_ptr(),
-                self.vwgt.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.vsize.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                &mut self.nparts,
-                self.tpwgts.map_or_else(ptr::null_mut, <[_]>::as_mut_ptr),
-                self.options.as_mut_ptr(),
+                &ne as *const Idx as *mut Idx,
+                &self.nn as *const Idx as *mut Idx,
+                slice_to_mut_ptr(self.eptr),
+                slice_to_mut_ptr(self.eind),
+                self.vwgt
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                self.vsize
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                &self.nparts as *const Idx as *mut Idx,
+                self.tpwgts
+                    .map_or_else(ptr::null_mut, |s| slice_to_mut_ptr(s)),
+                slice_to_mut_ptr(&self.options),
                 edgecut.as_mut_ptr(),
                 epart.as_mut_ptr(),
                 npart.as_mut_ptr(),
@@ -754,16 +793,16 @@ impl Drop for Dual {
 /// - `eptr` is empty, or
 /// - `eptr`'s length doesn't fit in [`Idx`].
 pub fn mesh_to_dual(
-    mut nn: Idx,
-    eptr: &mut [Idx],
-    eind: &mut [Idx],
-    mut ncommon: Idx,
-    mut numflag: Idx,
+    nn: Idx,
+    eptr: &[Idx],
+    eind: &[Idx],
+    ncommon: Idx,
+    numflag: Idx,
 ) -> Result<Dual> {
     let eptr_len = Idx::try_from(eptr.len()).expect("eptr array larger than Idx::MAX");
     assert_ne!(eptr_len, 0, "eptr cannot be empty");
 
-    let ne = &mut (eptr_len - 1);
+    let ne = eptr_len - 1;
     let mut xadj = mem::MaybeUninit::uninit();
     let mut adjncy = mem::MaybeUninit::uninit();
 
@@ -771,12 +810,12 @@ pub fn mesh_to_dual(
     // SAFETY: hopefully those arrays are of correct length.
     unsafe {
         m::METIS_MeshToDual(
-            ne,
-            &mut nn,
-            eptr.as_mut_ptr(),
-            eind.as_mut_ptr(),
-            &mut ncommon,
-            &mut numflag,
+            &ne as *const Idx as *mut Idx,
+            &nn as *const Idx as *mut Idx,
+            slice_to_mut_ptr(eptr),
+            slice_to_mut_ptr(eind),
+            &ncommon as *const Idx as *mut Idx,
+            &numflag as *const Idx as *mut Idx,
             xadj.as_mut_ptr(),
             adjncy.as_mut_ptr(),
         )
