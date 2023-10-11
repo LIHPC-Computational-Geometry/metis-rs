@@ -1,9 +1,9 @@
 use metis::Graph;
 
 fn main() -> Result<(), metis::Error> {
-    let xadj = &mut [0, 2, 5, 8, 11, 13, 16, 20, 24, 28, 31, 33, 36, 39, 42, 44];
+    let xadj = &[0, 2, 5, 8, 11, 13, 16, 20, 24, 28, 31, 33, 36, 39, 42, 44];
     #[rustfmt::skip]
-    let adjncy = &mut [
+    let adjncy = &[
         1, 5,
         0, 2, 6,
         1, 3, 7,
