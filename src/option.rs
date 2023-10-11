@@ -178,28 +178,6 @@ impl Opt for NSeps {
     }
 }
 
-/// Used to indicate which numbering scheme is used for the adjacency structure
-/// of a graph or the element-node structure of a mesh.
-pub enum Numbering {
-    /// C-style numbering which is assumed to start from 0.
-    C,
-
-    /// Fortran-style numbering which is assumed to start from 1.
-    Fortran,
-}
-
-impl private::Sealed for Numbering {}
-impl Opt for Numbering {
-    const INDEX: usize = m::moptions_et_METIS_OPTION_NUMBERING as usize;
-
-    fn value(self) -> Idx {
-        match self {
-            Numbering::C => 0,
-            Numbering::Fortran => 1,
-        }
-    }
-}
-
 /// Specifies the number of iterations for the refinement algorithms at each
 /// stage of the uncoarsening process.
 ///

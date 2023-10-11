@@ -294,6 +294,9 @@ impl<'a> Graph<'a> {
     /// not all are applicable to a given partitioning method.  Refer to the
     /// documentation of METIS ([link]) for more info on this.
     ///
+    /// Note that setting METIS_OPTION_NUMBERING to 1 is unsupported for safety
+    /// reasons.
+    ///
     /// [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
     ///
     /// # Example
@@ -323,6 +326,12 @@ impl<'a> Graph<'a> {
     /// # }
     /// ```
     pub fn set_options(mut self, options: &[Idx; NOPTIONS]) -> Graph<'a> {
+        // Make sure Fortran numbering is not set in the options, as that will change the input data.
+        // Panic for now, until there are appropriate checked and unchecked versions of the API
+        if options[m::moptions_et_METIS_OPTION_NUMBERING as usize] == 1 {
+            panic!("Changing the numbering scheme for METIS is unsupported");
+        }
+
         self.options.copy_from_slice(options);
         self
     }
@@ -601,10 +610,19 @@ impl<'a> Mesh<'a> {
     /// not all are applicable to a given partitioning method.  Refer to the
     /// documentation of METIS ([link]) for more info on this.
     ///
+    /// Note that setting METIS_OPTION_NUMBERING to 1 is unsupported for safety
+    /// reasons.
+    ///
     /// See [`Graph::set_options`] for a usage example.
     ///
     /// [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
     pub fn set_options(mut self, options: &[Idx; NOPTIONS]) -> Mesh<'a> {
+        // Make sure Fortran numbering is not set in the options, as that will change the input data.
+        // Panic for now, until there are appropriate checked and unchecked versions of the API
+        if options[m::moptions_et_METIS_OPTION_NUMBERING as usize] == 1 {
+            panic!("Changing the numbering scheme for METIS is unsupported");
+        }
+
         self.options.copy_from_slice(options);
         self
     }
