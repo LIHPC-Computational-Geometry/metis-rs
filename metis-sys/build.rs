@@ -1,9 +1,6 @@
 use std::env;
 use std::path::PathBuf;
 
-#[cfg(all(feature = "generate-bindings", not(feature = "vendored")))]
-compile_error!("feature `generate-bindings` requires feature `vendored`");
-
 #[cfg(feature = "vendored")]
 const IDX_SIZE: usize = 32;
 

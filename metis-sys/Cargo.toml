@@ -12,14 +12,17 @@ keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 
 
 [features]
-default = []
+default = ["dep:bindgen"]
 
 # Build and statically link to METIS and GKLib. By default metis-sys expects an
 # existing METIS install and links dynamically to it.
 vendored = ["dep:cc"]
-generate-bindings = []
+
+# Regenerate bindings in metis-sys/gen/bindings.rs from METIS in the "vendor"
+# directory. Also enables "vendored".
+generate-bindings = ["vendored", "dep:bindgen"]
 
 
 [build-dependencies]
-bindgen = { version = "0.66", default-features = false, features = ["runtime"] }
+bindgen = { version = "0.66", default-features = false, features = ["runtime"], optional = true }
 cc = { version = "1", features = ["parallel"], optional = true }

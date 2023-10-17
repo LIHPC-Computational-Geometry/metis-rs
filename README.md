@@ -10,7 +10,7 @@ metis-rs requires Rust v1.61.0 or above.
 # Use the vendored feature to build and link
 # statically to METIS. This avoids issues with
 # old or otherwise problematic installations.
-cargo add metis --features vendored
+cargo add metis --features vendored --no-default-features
 ```
 
 Features:
@@ -20,7 +20,7 @@ Features:
 - `generate-bindings`: regenerates the bindings to METIS when using the
   vendored build. This feature is intended for metis-rs maintainers who wish to
   update the bindings, e.g., when the github references to METIS in the "vendor"
-  directory are updated. Can only be used in conjunction with `vendored`.
+  directory are updated. Also enables `vendored`.
 
 When not using `vendored`, or when using `generate-bindings`, clang v5.0 or above
 is required to build metis-rs.
