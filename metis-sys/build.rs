@@ -1,12 +1,17 @@
 use std::env;
 use std::path::PathBuf;
-use std::process;
+
+#[cfg(all(feature = "generate-bindings", not(feature = "vendored")))]
+compile_error!("feature `generate-bindings` requires feature `vendored`");
 
 #[cfg(feature = "vendored")]
-fn build_lib() -> bindgen::Builder {
-    const IDX_SIZE: usize = 32;
-    const REAL_SIZE: usize = 32;
+const IDX_SIZE: usize = 32;
 
+#[cfg(feature = "vendored")]
+const REAL_SIZE: usize = 32;
+
+#[cfg(feature = "vendored")]
+fn build_lib() {
     let vendor = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../vendor");
     println!("cargo:rerun-if-changed={}", vendor.display());
 
@@ -138,25 +143,30 @@ fn build_lib() -> bindgen::Builder {
     println!("cargo:rustc-link-lib=static=metis");
     println!("cargo:lib={}", lib_dir.display());
     println!("cargo:out={}", out_dir.display());
-
-    bindgen::builder()
-        .clang_arg(format!("-DIDXTYPEWIDTH={}", IDX_SIZE))
-        .clang_arg(format!("-DREALTYPEWIDTH={}", REAL_SIZE))
-        .header("../vendor/metis/include/metis.h")
 }
 
 #[cfg(not(feature = "vendored"))]
-fn build_lib() -> bindgen::Builder {
+fn build_lib() {
     println!("cargo:rustc-link-lib=metis");
-    bindgen::builder().header("wrapper.h")
 }
 
-fn main() {
-    let bindings_builder = build_lib();
+// Always generate bindings when running from a locally installed METIS library.
+// When building directly from source (feature = "vendored"), only regenerate
+// bindings on command (feature = "generate-bindings").
+#[cfg(any(not(feature = "vendored"), feature = "generate-bindings"))]
+fn generate_bindings() {
+    #[cfg(feature = "vendored")]
+    let builder = bindgen::builder()
+        .clang_arg(format!("-DIDXTYPEWIDTH={}", IDX_SIZE))
+        .clang_arg(format!("-DREALTYPEWIDTH={}", REAL_SIZE))
+        .header("../vendor/metis/include/metis.h");
+
+    #[cfg(not(feature = "vendored"))]
+    let builder = bindgen::builder().header("wrapper.h");
 
     println!("cargo:rerun-if-changed=wrapper.h");
 
-    let bindings = bindings_builder
+    let bindings = builder
         .allowlist_function("METIS_.*")
         .allowlist_type("idx_t")
         .allowlist_type("real_t")
@@ -166,16 +176,29 @@ fn main() {
         .generate()
         .unwrap_or_else(|err| {
             eprintln!("Failed to generate bindings to METIS: {err}");
-            process::exit(1);
+            std::process::exit(1);
         });
 
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("bindings.rs");
+    let out_path = if cfg!(feature = "vendored") {
+        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("gen/bindings.rs")
+    } else {
+        PathBuf::from(env::var("OUT_DIR").unwrap()).join("bindings.rs")
+    };
+
     bindings.write_to_file(&out_path).unwrap_or_else(|err| {
         eprintln!(
             "Failed to write METIS bindings to {:?}: {}",
             out_path.display(),
             err,
         );
-        process::exit(1);
+        std::process::exit(1);
     });
+}
+
+#[cfg(all(feature = "vendored", not(feature = "generate-bindings")))]
+fn generate_bindings() {}
+
+fn main() {
+    build_lib();
+    generate_bindings();
 }

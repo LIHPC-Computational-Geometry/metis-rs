@@ -4,7 +4,7 @@ Idiomatic bindings to [libmetis][METIS], a graph and mesh partitioner.
 
 ## Usage
 
-metis-rs requires clang v5.0 or above and Rust v1.61.0 or above.
+metis-rs requires Rust v1.61.0 or above.
 
 ```sh
 # Use the vendored feature to build and link
@@ -17,6 +17,13 @@ Features:
 
 - `vendored`: build METIS from source and link to it statically. Otherwise,
   metis-rs looks for an existing installation and links to it dynamically.
+- `generate-bindings`: regenerates the bindings to METIS when using the
+  vendored build. This feature is intended for metis-rs maintainers who wish to
+  update the bindings, e.g., when the github references to METIS in the "vendor"
+  directory are updated. Can only be used in conjunction with `vendored`.
+
+When not using `vendored`, or when using `generate-bindings`, clang v5.0 or above
+is required to build metis-rs.
 
 ### When your METIS install is not found
 

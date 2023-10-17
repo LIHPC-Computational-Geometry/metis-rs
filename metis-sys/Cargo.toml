@@ -17,6 +17,7 @@ default = []
 # Build and statically link to METIS and GKLib. By default metis-sys expects an
 # existing METIS install and links dynamically to it.
 vendored = ["dep:cc"]
+generate-bindings = []
 
 
 [build-dependencies]
