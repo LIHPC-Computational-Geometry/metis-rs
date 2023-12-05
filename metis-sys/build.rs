@@ -1,5 +1,5 @@
-use std::env;
-use std::path::PathBuf;
+#[cfg(all(not(feature = "vendored"), not(feature = "bindgen")))]
+compile_error!(r#"either "default" or "vendored" must be enabled for `metis-rs`"#);
 
 #[cfg(feature = "vendored")]
 const IDX_SIZE: usize = 32;
@@ -9,6 +9,9 @@ const REAL_SIZE: usize = 32;
 
 #[cfg(feature = "vendored")]
 fn build_lib() {
+    use std::env;
+    use std::path::PathBuf;
+
     let vendor = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../vendor");
     println!("cargo:rerun-if-changed={}", vendor.display());
 
@@ -150,8 +153,14 @@ fn build_lib() {
 // Always generate bindings when running from a locally installed METIS library.
 // When building directly from source (feature = "vendored"), only regenerate
 // bindings on command (feature = "generate-bindings").
-#[cfg(any(not(feature = "vendored"), feature = "generate-bindings"))]
+#[cfg(all(
+    feature = "bindgen",
+    any(not(feature = "vendored"), feature = "generate-bindings")
+))]
 fn generate_bindings() {
+    use std::env;
+    use std::path::PathBuf;
+
     #[cfg(feature = "vendored")]
     let builder = bindgen::builder()
         .clang_arg(format!("-DIDXTYPEWIDTH={}", IDX_SIZE))
@@ -192,7 +201,10 @@ fn generate_bindings() {
     });
 }
 
-#[cfg(all(feature = "vendored", not(feature = "generate-bindings")))]
+#[cfg(not(all(
+    feature = "bindgen",
+    any(not(feature = "vendored"), feature = "generate-bindings")
+)))]
 fn generate_bindings() {}
 
 fn main() {
