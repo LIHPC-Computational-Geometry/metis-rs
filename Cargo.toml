@@ -17,14 +17,11 @@ keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 [features]
 default = ["metis-sys/default"]
 
-# Build and statically link to METIS and GKLib. By default metis-rs expects an
-# existing METIS install and links dynamically to it.
+# Build and statically link to METIS and GKLib.
 vendored = ["metis-sys/vendored"]
 
-# Regenerate bindings in metis-sys/gen/bindings.rs from METIS in the "vendor"
-# directory. Also enabled "vendored".
-generate-bindings = ["vendored", "metis-sys/generate-bindings"]
-
+# Use existing METIS install and links dynamically to it.
+use-system = ["metis-sys/use-system"]
 
 [dependencies]
 metis-sys = { version = "0.2", path = "metis-sys", default-features = false }
