@@ -1,58 +1,48 @@
 # metis-rs
 
-Idiomatic bindings to [libmetis][METIS], a graph and mesh partitioner.
+**metis-rs** is a Rust library providing idiomatic bindings to [libmetis][METIS], a library for graph and mesh
+partitioning. It is made to be used with Rust version 1.61.0 or above.
 
-## Usage
+## Features
 
-metis-rs requires Rust v1.61.0 or above.
+### Use of Vendored Feature
 
-```sh
-# Use the vendored feature to build and link
-# statically to METIS. This avoids issues with
-# old or otherwise problematic installations.
-cargo add metis --features vendored --no-default-features
+The `vendored` feature enables metis-rs to build METIS from source and link to it statically. If not enabled, metis-rs
+looks for an existing installation and links to it dynamically.
+
+### Use of System-wide Feature
+
+The `use-system` feature enables metis-rs to use the system-wide installation of METIS. If not enabled, metis-rs will
+refer to its own version of METIS.
+
+Please note, `vendored` and `use-system` features are mutually exclusive.
+
+## Guidance for non-standard METIS installations
+
+If you enabled the `use-system` feature and METIS is installed in a non-standard location, you must set the following
+environment variables:
+```bash
+export METISDIR=path/to/your/metis/installation
+export CPATH="$METISDIR/include"
+export RUSTFLAGS="-L$METISDIR/lib"
 ```
 
-Features:
+`$METISDIR` must point to a directory containing both `lib/` and `include/` directories with METIS's shared libraries and headers, respectively.
 
-- `vendored`: build METIS from source and link to it statically. Otherwise,
-  metis-rs looks for an existing installation and links to it dynamically.
-- `generate-bindings`: regenerates the bindings to METIS when using the
-  vendored build. This feature is intended for metis-rs maintainers who wish to
-  update the bindings, e.g., when the github references to METIS in the "vendor"
-  directory are updated. Also enables `vendored`.
+## Building the documentation
 
-When not using `vendored`, or when using `generate-bindings`, clang v5.0 or above
-is required to build metis-rs.
+To build the documentation, especially if METIS is installed in a non-standard location, set the `RUSTDOCFLAGS` environment variable:
 
-### When your METIS install is not found
-
-If the vendored feature is disabled (the default), and if METIS is installed in
-a non-standard location, you have to set the `CPATH` and `RUSTFLAGS` environment
-variables like so:
-
-    export METISDIR=path/to/your/metis/installation
-    export CPATH="$METISDIR/include"
-    export RUSTFLAGS="-L$METISDIR/lib"
-
-The environment variable `$METISDIR` must point to a directory containing a
-`lib/` and a `include/` directory containing the shared libraries and the
-headers of METIS, respectively.
-
-### Build the documentation
-
-If the vendored feature is disabled (the default), and if METIS is installed in
-a non-standard location, the additional `RUSTDOCFLAGS` environment variable
-needs to be set.
-
-    export RUSTDOCFLAGS="-L$METISDIR/lib"
-
-Then you can call `cargo doc --no-deps --open`.
+```bash
+export RUSTDOCFLAGS="-L$METISDIR/lib"
+```
+Then the following command will generate and open the documentation:
+```bash
+cargo doc --no-deps --open
+```
 
 ## License
 
-This program is distributed under the terms of both the MIT license and the
-Apache License (Version 2.0).  See `LICENSE-APACHE` and `LICENSE-MIT` for
-details.
+metis-rs is distributed under the terms of both the MIT license and the Apache License (Version 2.0). Refer to `LICENSE-APACHE` and `LICENSE-MIT` for more details.
 
 [METIS]: http://glaros.dtc.umn.edu/gkhome/metis/metis/overview
