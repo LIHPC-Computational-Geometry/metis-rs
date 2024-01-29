@@ -19,7 +19,9 @@ jobs:
           - stable
           - 1.61.0
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -39,7 +41,9 @@ jobs:
           - stable
           - 1.61.0
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -54,7 +58,9 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -70,7 +76,9 @@ jobs:
     name: Clippy
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
