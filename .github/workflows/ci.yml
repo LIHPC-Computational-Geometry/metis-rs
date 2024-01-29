@@ -54,9 +54,7 @@ jobs:
           override: true
       - run: sudo apt-get -y install libmetis-dev libclang-dev
         if: matrix.features == 'use-system'
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test --features ${{ matrix.features }} --no-default-features --all
+      - run: cargo test --features ${{ matrix.features }} --no-default-features --all
   fmt:
     name: Rustfmt
     runs-on: ubuntu-22.04
