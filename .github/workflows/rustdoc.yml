@@ -16,14 +16,15 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
           override: true
           components: rustfmt, rust-src
-      - run: sudo apt-get -y install libmetis-dev libclang-dev
       - uses: actions-rs/cargo@v1
         with:
           command: doc
