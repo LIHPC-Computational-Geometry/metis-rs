@@ -1,5 +1,5 @@
-#[cfg(all(not(feature = "vendored"), not(feature = "bindgen")))]
-compile_error!(r#"either "default" or "vendored" must be enabled for `metis-rs`"#);
+#[cfg(all(not(feature = "vendored"), not(feature = "use-system")))]
+compile_error!(r#"either "use-system" or "vendored" must be enabled for `metis-sys`"#);
 
 #[cfg(feature = "vendored")]
 const IDX_SIZE: usize = 32;
@@ -154,7 +154,7 @@ fn build_lib() {
 // When building directly from source (feature = "vendored"), only regenerate
 // bindings on command (feature = "generate-bindings").
 #[cfg(all(
-    feature = "bindgen",
+    feature = "use-system",
     any(not(feature = "vendored"), feature = "generate-bindings")
 ))]
 fn generate_bindings() {
@@ -202,7 +202,7 @@ fn generate_bindings() {
 }
 
 #[cfg(not(all(
-    feature = "bindgen",
+    feature = "use-system",
     any(not(feature = "vendored"), feature = "generate-bindings")
 )))]
 fn generate_bindings() {}
