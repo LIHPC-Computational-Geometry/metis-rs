@@ -3,8 +3,8 @@ members = [".", "metis-sys"]
 
 [package]
 name = "metis"
-version = "0.1.2"
-authors = ["Hubert Hirtz <hubert@hirtz.pm>"]
+version = "0.2.0"
+authors = ["Hubert Hirtz <hubert@hirtz.pm>", "Cedric Chevalier <cedric.chevalier@cea.fr>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/LIHPC-Computational-Geometry/metis-rs"
@@ -24,4 +24,4 @@ vendored = ["metis-sys/vendored"]
 use-system = ["metis-sys/use-system"]
 
 [dependencies]
-metis-sys = { version = "0.2", path = "metis-sys", default-features = false }
+metis-sys = { version = "0.3", path = "metis-sys", default-features = false }
