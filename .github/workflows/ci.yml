@@ -27,7 +27,6 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - run: sudo apt-get -y install libmetis-dev libclang-dev
       - uses: actions-rs/cargo@v1
         with:
           command: check
@@ -40,6 +39,10 @@ jobs:
         rust:
           - stable
           - 1.67.0
+          - nightly
+        features:
+          - vendored
+          - use-system
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,7 +52,8 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - run: sudo apt-get -y install libmetis-dev libclang-dev
+      - run: sudo apt-get -y install libmetis-dev libclang-dev && cargo add metis-rs --features ${{ matrix.features }} --path .
+        if: matrix.features == 'use-system'
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -85,7 +89,6 @@ jobs:
           toolchain: stable
           override: true
           components: clippy
-      - run: sudo apt-get -y install libmetis-dev libclang-dev
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
