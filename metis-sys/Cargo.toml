@@ -12,7 +12,7 @@ keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 
 
 [features]
-default = ["bindgen"]
+default = ["vendored"]
 
 # Build and statically link to METIS and GKLib. By default metis-sys expects an
 # existing METIS install and links dynamically to it.
