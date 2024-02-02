@@ -28,28 +28,15 @@ jobs:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@master
         with:
-          components: clippy
+          components: clippy, rustfmt
           toolchain: ${{ matrix.rust }}
       - run: sudo apt-get -y install libmetis-dev libclang-dev
         if: matrix.features == 'use-system'
+      - name: Check Format
+        run: cargo fmt -- --check
       - name: Run Check
         run: cargo check --features ${{ matrix.features }} --no-default-features
       - name: Run Clippy
         run: cargo clippy --features ${{ matrix.features }} --no-default-features
       - name: Run Tests
         run: cargo test --features ${{ matrix.features }} --no-default-features --all
-
-  fmt:
-    name: Rustfmt
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: -p metis -- --check
