@@ -26,9 +26,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: dtolnay/rust-toolchain@$${{ matrix.rust }}
+      - uses: dtolnay/rust-toolchain@master
         with:
           components: clippy
+          toolchain: ${{ matrix.rust }}
       - run: sudo apt-get -y install libmetis-dev libclang-dev
         if: matrix.features == 'use-system'
       - uses: Swatinem/rust-cache@v2
