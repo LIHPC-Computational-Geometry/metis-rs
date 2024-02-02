@@ -32,10 +32,6 @@ jobs:
           toolchain: ${{ matrix.rust }}
       - run: sudo apt-get -y install libmetis-dev libclang-dev
         if: matrix.features == 'use-system'
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ runner.os }}-rust-${{ matrix.rust }}-${{ matrix.features }}
-          restore-keys: ${{ runner.os }}-rust-${{ matrix.rust }}-${{ matrix.features }}
       - name: Run Check
         run: cargo check --features ${{ matrix.features }} --no-default-features
       - name: Run Clippy
