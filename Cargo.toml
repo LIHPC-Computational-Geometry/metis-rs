@@ -3,8 +3,8 @@ members = [".", "metis-sys"]
 
 [package]
 name = "metis"
-version = "0.1.2"
-authors = ["Hubert Hirtz <hubert@hirtz.pm>"]
+version = "0.2.0"
+authors = ["Hubert Hirtz <hubert@hirtz.pm>", "Cedric Chevalier <cedric.chevalier@cea.fr>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/LIHPC-Computational-Geometry/metis-rs"
@@ -14,5 +14,14 @@ keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["metis-sys/default"]
+
+# Build and statically link to METIS and GKLib.
+vendored = ["metis-sys/vendored"]
+
+# Use existing METIS install and links dynamically to it.
+use-system = ["metis-sys/use-system"]
+
 [dependencies]
-metis-sys = { version = "0.2", path = "metis-sys" }
+metis-sys = { version = "0.3", path = "metis-sys", default-features = false }

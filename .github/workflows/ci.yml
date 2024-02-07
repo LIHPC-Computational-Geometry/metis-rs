@@ -10,26 +10,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    name: Check
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        rust:
-          - stable
-          - 1.60.0
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
-      - run: sudo apt-get -y install libmetis-dev libclang-dev
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-
   test:
     name: Test Suite
     runs-on: ubuntu-22.04
@@ -37,48 +17,26 @@ jobs:
       matrix:
         rust:
           - stable
-          - 1.60.0
+          - 1.67.0
+          - nightly
+        features:
+          - vendored
+          - use-system
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
         with:
-          profile: minimal
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          components: clippy, rustfmt
           toolchain: ${{ matrix.rust }}
-          override: true
       - run: sudo apt-get -y install libmetis-dev libclang-dev
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-
-  fmt:
-    name: Rustfmt
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: -p metis -- --check
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: clippy
-      - run: sudo apt-get -y install libmetis-dev libclang-dev
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -p metis -- -D warnings
+        if: matrix.features == 'use-system'
+      - name: Check Format
+        run: cargo fmt -- --check
+      - name: Run Check
+        run: cargo check --features ${{ matrix.features }} --no-default-features
+      - name: Run Clippy
+        run: cargo clippy --features ${{ matrix.features }} --no-default-features
+      - name: Run Tests
+        run: cargo test --features ${{ matrix.features }} --no-default-features --all

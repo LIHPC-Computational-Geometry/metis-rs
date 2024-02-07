@@ -1,41 +1,48 @@
 # metis-rs
 
-Idiomatic bindings to [libmetis][METIS], a graph and mesh partitioner.
+**metis-rs** is a Rust library providing idiomatic bindings to [libmetis][METIS], a library for graph and mesh
+partitioning. It is made to be used with Rust version 1.67.0 or above.
 
-## Building
+## Features
 
-Prerequisites:
+### Use of Vendored Feature
 
-- METIS
-- clang v5.0 or above
-- Rust v1.60.0 or above
+The `vendored` feature enables metis-rs to build METIS from source and link to it statically. If not enabled, metis-rs
+looks for an existing installation and links to it dynamically.
 
-Bindings to METIS are made on the fly.  If METIS is installed in a non-standard
-location, please use the following commands:
+### Use of System-wide Feature
 
-    export METISDIR=path/to/your/metis/installation
-    export CPATH="$METISDIR/include"
-    export RUSTFLAGS="-L$METISDIR/lib"
+The `use-system` feature enables metis-rs to use the system-wide installation of METIS. If not enabled, metis-rs will
+refer to its own version of METIS.
 
-The environment variable `$METISDIR` must point to a directory containing a
-`lib/` and a `include/` directory containing the shared libraries and the
-headers of METIS, respectively.
+Please note, `vendored` and `use-system` features are mutually exclusive.
 
-Once these variables are set, you can build the bindings with `cargo build`.
+## Guidance for non-standard METIS installations
 
-### Build the documentation
+If you enabled the `use-system` feature and METIS is installed in a non-standard location, you must set the following
+environment variables:
+```bash
+export METISDIR=path/to/your/metis/installation
+export CPATH="$METISDIR/include"
+export RUSTFLAGS="-L$METISDIR/lib"
+```
 
-If your METIS installation lies in a non-standard path, you will need to set
-the `RUSTDOCFLAGS` environment variable to build the documentation:
+`$METISDIR` must point to a directory containing both `lib/` and `include/` directories with METIS's shared libraries and headers, respectively.
 
-    export RUSTDOCFLAGS="-L$METISDIR/lib"
+## Building the documentation
 
-Then you can call `cargo doc --no-deps --open`.
+To build the documentation, especially if METIS is installed in a non-standard location, set the `RUSTDOCFLAGS` environment variable:
+
+```bash
+export RUSTDOCFLAGS="-L$METISDIR/lib"
+```
+Then the following command will generate and open the documentation:
+```bash
+cargo doc --no-deps --open
+```
 
 ## License
 
-This program is distributed under the terms of both the MIT license and the
-Apache License (Version 2.0).  See `LICENSE-APACHE` and `LICENSE-MIT` for
-details.
+metis-rs is distributed under the terms of both the MIT license and the Apache License (Version 2.0). Refer to `LICENSE-APACHE` and `LICENSE-MIT` for more details.
 
 [METIS]: http://glaros.dtc.umn.edu/gkhome/metis/metis/overview
