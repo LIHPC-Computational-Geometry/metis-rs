@@ -21,7 +21,7 @@ fn main() -> Result<(), metis::Error> {
         9, 13,
     ];
     let mut part = vec![0x00; 15];
-    Graph::new(1, 2, xadj, adjncy).part_recursive(&mut part)?;
+    Graph::new(1, 2, xadj, adjncy)?.part_recursive(&mut part)?;
     println!("{:?}", part);
 
     Ok(())

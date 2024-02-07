@@ -4,12 +4,14 @@
 
 #![deny(missing_docs)]
 
+use crate::option::Opt;
 use metis_sys as m;
 use std::convert::TryFrom;
 use std::fmt;
 use std::mem;
 use std::os;
 use std::ptr;
+use std::result::Result as StdResult;
 use std::slice;
 
 pub mod option;
@@ -46,6 +48,18 @@ pub enum Error {
 
 impl std::error::Error for Error {}
 
+impl From<NewGraphError> for Error {
+    fn from(_: NewGraphError) -> Self {
+        Self::Input
+    }
+}
+
+impl From<NewMeshError> for Error {
+    fn from(_: NewMeshError) -> Self {
+        Self::Input
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -57,7 +71,7 @@ impl fmt::Display for Error {
 }
 
 /// The result of a partitioning.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = StdResult<T, Error>;
 
 trait ErrorCode {
     /// Makes a [`Result`] from a return code (int) from METIS.
@@ -73,6 +87,63 @@ impl ErrorCode for m::rstatus_et {
             m::rstatus_et_METIS_ERROR => Err(Error::Other),
             other => panic!("unexpected error code ({}) from METIS", other),
         }
+    }
+}
+
+/// Error raised when the graph data fed to [`Graph::new`] cannot be safely
+/// passed to METIS.
+///
+/// Graph data must follow the format described in [`Graph::new`].
+#[derive(Debug)]
+pub struct InvalidGraphError {
+    msg: &'static str,
+}
+
+impl fmt::Display for InvalidGraphError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.msg.fmt(f)
+    }
+}
+
+/// Error type returned by [`Graph::new`].
+///
+/// Unlike [`Error`], this error originates from the Rust bindings.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum NewGraphError {
+    /// `ncon` must be greater than 1.
+    NoConstraints,
+
+    /// `nparts` must be greater than 1.
+    NoParts,
+
+    /// Graph is too large. One of the array's length doesn't fit into [`Idx`].
+    TooLarge,
+
+    /// The input arrays are malformed and cannot be safely passed to METIS.
+    ///
+    /// Note that these bindings do not check for all the invariants. Some might
+    /// be raised during [`Graph::part_recursive`] and [`Graph::part_kway`] as
+    /// [`Error::Input`].
+    InvalidGraph(InvalidGraphError),
+}
+
+impl fmt::Display for NewGraphError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoConstraints => write!(f, "there must be at least one constraint"),
+            Self::NoParts => write!(f, "there must be at least one part"),
+            Self::TooLarge => write!(f, "graph is too large"),
+            Self::InvalidGraph(err) => write!(f, "invalid graph structure: {err}"),
+        }
+    }
+}
+
+impl std::error::Error for NewGraphError {}
+
+impl NewGraphError {
+    fn msg(msg: &'static str) -> Self {
+        Self::InvalidGraph(InvalidGraphError { msg })
     }
 }
 
@@ -100,7 +171,7 @@ unsafe fn slice_to_mut_ptr<T>(slice: &[T]) -> *mut T {
 ///
 /// // There are one constraint and two parts.  The partitioning algorithm used
 /// // is recursive bisection.  The k-way algorithm can also be used.
-/// Graph::new(1, 2, xadj, adjncy)
+/// Graph::new(1, 2, xadj, adjncy)?
 ///     .part_recursive(&mut part)?;
 ///
 /// // The two vertices are placed in different parts.
@@ -158,10 +229,149 @@ pub struct Graph<'a> {
 impl<'a> Graph<'a> {
     /// Creates a new [`Graph`] object to be partitioned.
     ///
+    /// - `ncon` is the number of constraints on each vertex (at least 1),
+    /// - `nparts` is the number of parts wanted in the graph partition.
+    ///
+    /// # Input format
+    ///
+    /// CSR (Compressed Sparse Row) is a data structure for representing sparse
+    /// matrices and is the primary data structure used by METIS. A CSR
+    /// formatted graph is represented with two slices: an adjacency list
+    /// (`adjcny`) and an index list (`xadj`). The nodes adjacent to node `n`
+    /// are `adjncy[xadj[n]..xadj[n + 1]]`. Additionally, metis requires that
+    /// graphs are undirected: if `(u, v)` is in the graph, then `(v, u)` must
+    /// also be in the graph.
+    ///
+    /// Consider translating this simple graph to CSR format:
+    /// ```rust
+    /// // 5 - 3 - 4 - 0
+    /// //     |   | /
+    /// //     2 - 1
+    /// let adjncy = [1, 4, 0, 2, 4, 1, 3, 2, 4, 5, 0, 1, 3, 3];
+    /// let xadj = [0, 2, 5, 7, 10, 13, 14];
+    ///
+    /// // iterate over adjacent nodes
+    /// let mut it = xadj
+    ///     .windows(2)
+    ///     .map(|x| &adjncy[x[0]..x[1]]);
+    ///
+    /// // node 0 is adjacent to nodes 1 and 4
+    /// assert_eq!(it.next().unwrap(), &[1, 4]);
+    ///
+    /// // node 1 is adjacent to nodes 0, 2, and 4
+    /// assert_eq!(it.next().unwrap(), &[0, 2, 4]);
+    ///
+    /// // node 2 is adjacent to nodes 1 and 3
+    /// assert_eq!(it.next().unwrap(), &[1, 3]);
+    ///
+    /// // node 3 is adjacent to nodes 2, 4, and 5
+    /// assert_eq!(it.next().unwrap(), &[2, 4, 5]);
+    ///
+    /// // node 4 is adjacent to nodes 0, 1, and 3
+    /// assert_eq!(it.next().unwrap(), &[0, 1, 3]);
+    ///
+    /// // node 5 is adjacent to node 3
+    /// assert_eq!(it.next().unwrap(), &[3]);
+    ///
+    /// assert!(it.next().is_none());
+    /// ```
+    ///
+    /// More info can be found at:
+    /// <https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)>
+    ///
+    /// # Errors
+    ///
+    /// The following invariants must be held, otherwise this function returns
+    /// an error:
+    ///
+    /// - all of the arrays have a length that can be held by an [`Idx`],
+    /// - `ncon` is strictly greater than zero,
+    /// - `nparts` is strictly greater than zero,
+    /// - `xadj` has at least one element (its length is the one more than the
+    ///   number of vertices),
+    /// - `xadj` is sorted,
+    /// - elements of `xadj` are positive,
+    /// - the last element of `xadj` is the length of `adjncy`,
+    /// - elements of `adjncy` are within zero and the number of vertices.
+    ///
+    /// # Mutability
+    ///
+    /// [`Graph::part_kway`] and [`Graph::part_recursive`] may mutate the
+    /// contents of `xadj` and `adjncy`, but should revert all changes before
+    /// returning.
+    pub fn new(
+        ncon: Idx,
+        nparts: Idx,
+        xadj: &'a [Idx],
+        adjncy: &'a [Idx],
+    ) -> StdResult<Graph<'a>, NewGraphError> {
+        if ncon <= 0 {
+            return Err(NewGraphError::NoConstraints);
+        }
+        if nparts <= 0 {
+            return Err(NewGraphError::NoParts);
+        }
+
+        let last_xadj = *xadj
+            .last()
+            .ok_or(NewGraphError::msg("index list is empty"))?;
+        let adjncy_len = Idx::try_from(adjncy.len()).map_err(|_| NewGraphError::TooLarge)?;
+        if last_xadj != adjncy_len {
+            return Err(NewGraphError::msg(
+                "length mismatch between index and adjacency lists",
+            ));
+        }
+
+        let nvtxs = match Idx::try_from(xadj.len()) {
+            Ok(xadj_len) => xadj_len - 1,
+            Err(_) => {
+                return Err(NewGraphError::TooLarge);
+            }
+        };
+
+        let mut prev = 0;
+        for x in &*xadj {
+            if prev > *x {
+                return Err(NewGraphError::msg("index list is not sorted"));
+            }
+            prev = *x;
+        }
+
+        for a in &*adjncy {
+            if *a < 0 || *a >= nvtxs {
+                return Err(NewGraphError::msg(
+                    "some values in the adjacency list are out of bounds",
+                ));
+            }
+        }
+
+        Ok(unsafe { Graph::new_unchecked(ncon, nparts, xadj, adjncy) })
+    }
+
+    /// Creates a new [`Graph`] object to be partitioned (unchecked version).
+    ///
+    /// - `ncon` is the number of constraints on each vertex (at least 1),
+    /// - `nparts` is the number of parts wanted in the graph partition.
+    ///
+    /// # Input format
+    ///
+    /// `xadj` and `adjncy` are the [CSR encoding][0] of the adjacency matrix
+    /// that represents the graph. `xadj` is the row index and `adjncy` is the
+    /// column index.
+    ///
+    /// [0]: https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format)
+    ///
+    /// # Safety
+    ///
+    /// This function still does some checks listed in "Panics" below. However,
+    /// the caller is reponsible for upholding all invariants listed in the
+    /// "Errors" section of [`Graph::new`]. Otherwise, the behavior of this
+    /// function is undefined.
+    ///
     /// # Panics
     ///
     /// This function panics if:
-    /// - any of the arrays have a length that cannot be hold by an [`Idx`], or
+    /// - any of the arrays have a length that cannot be held by an [`Idx`], or
     /// - `ncon` is not strictly greater than zero, or
     /// - `nparts` is not strictly greater than zero, or
     /// - `xadj` is empty, or
@@ -169,10 +379,15 @@ impl<'a> Graph<'a> {
     ///
     /// # Mutability
     ///
-    /// While nothing should be modified by the [`Graph`] structure, METIS
-    /// doesn't specify any `const` modifier, so everything must be mutable on
-    /// Rust's side.
-    pub fn new(ncon: Idx, nparts: Idx, xadj: &'a [Idx], adjncy: &'a [Idx]) -> Graph<'a> {
+    /// [`Graph::part_kway`] and [`Graph::part_recursive`] may mutate the
+    /// contents of `xadj` and `adjncy`, but should revert all changes before
+    /// returning.
+    pub unsafe fn new_unchecked(
+        ncon: Idx,
+        nparts: Idx,
+        xadj: &'a [Idx],
+        adjncy: &'a [Idx],
+    ) -> Graph<'a> {
         assert!(0 < ncon, "ncon must be strictly greater than zero");
         assert!(0 < nparts, "nparts must be strictly greater than zero");
         let _ = Idx::try_from(xadj.len()).expect("xadj array larger than Idx::MAX");
@@ -294,9 +509,6 @@ impl<'a> Graph<'a> {
     /// not all are applicable to a given partitioning method.  Refer to the
     /// documentation of METIS ([link]) for more info on this.
     ///
-    /// Note that setting METIS_OPTION_NUMBERING to 1 is unsupported for safety
-    /// reasons.
-    ///
     /// [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
     ///
     /// # Example
@@ -316,7 +528,7 @@ impl<'a> Graph<'a> {
     /// // four refinement iterations instead of the default 10.
     /// options[metis::option::NIter::INDEX] = 4;
     ///
-    /// Graph::new(1, 2, xadj, adjncy)
+    /// Graph::new(1, 2, xadj, adjncy)?
     ///     .set_options(&options)
     ///     .part_recursive(&mut part)?;
     ///
@@ -326,12 +538,6 @@ impl<'a> Graph<'a> {
     /// # }
     /// ```
     pub fn set_options(mut self, options: &[Idx; NOPTIONS]) -> Graph<'a> {
-        // Make sure Fortran numbering is not set in the options, as that will change the input data.
-        // Panic for now, until there are appropriate checked and unchecked versions of the API
-        if options[m::moptions_et_METIS_OPTION_NUMBERING as usize] == 1 {
-            panic!("Changing the numbering scheme for METIS is unsupported");
-        }
-
         self.options.copy_from_slice(options);
         self
     }
@@ -356,7 +562,7 @@ impl<'a> Graph<'a> {
     /// let adjncy = &[1, 0];
     /// let mut part = [0, 0];
     ///
-    /// Graph::new(1, 2, xadj, adjncy)
+    /// Graph::new(1, 2, xadj, adjncy)?
     ///     .set_option(metis::option::NIter(4))
     ///     .part_recursive(&mut part)?;
     ///
@@ -384,13 +590,20 @@ impl<'a> Graph<'a> {
     ///
     /// This function panics if the length of `part` is not the number of
     /// vertices.
-    pub fn part_recursive(self, part: &mut [Idx]) -> Result<Idx> {
+    pub fn part_recursive(mut self, part: &mut [Idx]) -> Result<Idx> {
+        self.options[option::Numbering::INDEX] = option::Numbering::C.value();
         let part_len = Idx::try_from(part.len()).expect("part array larger than Idx::MAX");
         assert_eq!(
             part_len,
             self.xadj.len() as Idx - 1,
             "part.len() must be equal to the number of vertices",
         );
+
+        if self.nparts == 1 {
+            // METIS does not handle this case well.
+            part.fill(0);
+            return Ok(0);
+        }
 
         let nvtxs = self.xadj.len() as Idx - 1;
         let mut edgecut = mem::MaybeUninit::uninit();
@@ -440,6 +653,12 @@ impl<'a> Graph<'a> {
             "part.len() must be equal to the number of vertices",
         );
 
+        if self.nparts == 1 {
+            // METIS does not handle this case well.
+            part.fill(0);
+            return Ok(0);
+        }
+
         let nvtxs = self.xadj.len() as Idx - 1;
         let mut edgecut = mem::MaybeUninit::uninit();
         let part = part.as_mut_ptr();
@@ -468,6 +687,96 @@ impl<'a> Graph<'a> {
             Ok(edgecut.assume_init())
         }
     }
+}
+
+/// Error raised when the mesh data fed to [`Mesh::new`] cannot be safely passed
+/// to METIS.
+///
+/// Mesh data must follow the format described in [`Mesh::new`].
+#[derive(Debug)]
+pub struct InvalidMeshError {
+    msg: &'static str,
+}
+
+impl fmt::Display for InvalidMeshError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.msg.fmt(f)
+    }
+}
+
+/// Error type returned by [`Mesh::new`].
+///
+/// Unlike [`Error`], this error originates from the Rust bindings.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum NewMeshError {
+    /// `nparts` must be greater than 1.
+    NoParts,
+
+    /// Mesh is too large. One of the array's length doesn't fit into [`Idx`].
+    TooLarge,
+
+    /// The input arrays are malformed and cannot be safely passed to METIS.
+    ///
+    /// Note that these bindings do not check for all the invariants. Some might
+    /// be raised during [`Mesh::part_dual`] and [`Mesh::part_nodal`] as
+    /// [`Error::Input`].
+    InvalidMesh(InvalidMeshError),
+}
+
+impl fmt::Display for NewMeshError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoParts => write!(f, "there must be at least one part"),
+            Self::TooLarge => write!(f, "mesh is too large"),
+            Self::InvalidMesh(err) => write!(f, "invalid mesh structure: {err}"),
+        }
+    }
+}
+
+impl std::error::Error for NewMeshError {}
+
+impl NewMeshError {
+    fn msg(msg: &'static str) -> Self {
+        Self::InvalidMesh(InvalidMeshError { msg })
+    }
+}
+
+/// Returns the number of elements and the number of nodes in the mesh.
+fn check_mesh_structure(eptr: &[Idx], eind: &[Idx]) -> StdResult<(Idx, Idx), NewMeshError> {
+    let last_eptr = *eptr
+        .last()
+        .ok_or(NewMeshError::msg("element index is empty"))?;
+    let eind_len = Idx::try_from(eind.len()).map_err(|_| NewMeshError::TooLarge)?;
+    if last_eptr != eind_len {
+        return Err(NewMeshError::msg(
+            "length mismatch between element and node indices",
+        ));
+    }
+
+    let ne = Idx::try_from(eptr.len()).map_err(|_| NewMeshError::TooLarge)? - 1;
+
+    let mut prev = 0;
+    for x in eptr {
+        if prev > *x {
+            return Err(NewMeshError::msg("element index is not sorted"));
+        }
+        prev = *x;
+    }
+
+    let mut max_node = 0;
+    for a in eind {
+        if *a < 0 {
+            return Err(NewMeshError::msg(
+                "values in the node index are out of bounds",
+            ));
+        }
+        if *a > max_node {
+            max_node = *a;
+        }
+    }
+
+    Ok((ne, max_node + 1))
 }
 
 /// Builder structure to setup a mesh partition computation.
@@ -518,23 +827,80 @@ pub struct Mesh<'a> {
 impl<'a> Mesh<'a> {
     /// Creates a new [`Mesh`] object to be partitioned.
     ///
+    /// `nparts` is the number of parts wanted in the mesh partition.
+    ///
+    /// # Input format
+    ///
+    /// The length of `eptr` is `n + 1`, where `n` is the number of elements in
+    /// the mesh. The length of `eind` is the sum of the number of nodes in all
+    /// the elements of the mesh. The list of nodes belonging to the `i`th
+    /// element of the mesh are stored in consecutive locations of `eind`
+    /// starting at position `eptr[i]` up to (but not including) position
+    /// `eptr[i+1]`.
+    ///
+    /// # Errors
+    ///
+    /// The following invariants must be held, otherwise this function returns
+    /// an error:
+    ///
+    /// - `nparts` is strictly greater than zero,
+    /// - `eptr` has at least one element (its length is the one more than the
+    ///   number of mesh elements),
+    /// - `eptr` is sorted,
+    /// - elements of `eptr` are positive,
+    /// - the last element of `eptr` is the length of `eind`,
+    /// - all the arrays have a length that can be held by an [`Idx`].
+    ///
+    /// # Mutability
+    ///
+    /// [`Mesh::part_dual`] and [`Mesh::part_nodal`] may mutate the contents of
+    /// `eptr` and `eind`, but should revert all changes before returning.
+    pub fn new(nparts: Idx, eptr: &'a [Idx], eind: &'a [Idx]) -> StdResult<Mesh<'a>, NewMeshError> {
+        if nparts <= 0 {
+            return Err(NewMeshError::NoParts);
+        }
+        let (_ne, nn) = check_mesh_structure(&*eptr, &*eind)?;
+        Ok(unsafe { Mesh::new_unchecked(nn, nparts, eptr, eind) })
+    }
+
+    /// Creates a new [`Mesh`] object to be partitioned (unchecked version).
+    ///
+    /// - `nn` is the number of nodes in the mesh,
+    /// - `nparts` is the number of parts wanted in the mesh partition.
+    ///
+    /// # Input format
+    ///
+    /// See [`Mesh::new`].
+    ///
+    /// # Safety
+    ///
+    /// This function still does some checks listed in "Panics" below. However,
+    /// the caller is reponsible for upholding all invariants listed in the
+    /// "Errors" section of [`Mesh::new`]. Otherwise, the behavior of this
+    /// function is undefined.
+    ///
     /// # Panics
     ///
     /// This function panics if:
+    /// - any of the arrays have a length that cannot be hold by an [`Idx`], or
     /// - `nn` is not strictly greater than zero, or
     /// - `nparts` is not strictly greater than zero, or
     /// - `eptr` is empty, or
-    /// - the length of `eind` is different than the last element of `eptr`, or
-    /// - any of the arrays have a length that cannot be hold by an [`Idx`].
+    /// - the length of `eind` is different than the last element of `eptr`.
     ///
     /// # Mutability
     ///
     /// While nothing should be modified by the [`Mesh`] structure, METIS
     /// doesn't specify any `const` modifier, so everything must be mutable on
     /// Rust's side.
-    pub fn new(nn: Idx, nparts: Idx, eptr: &'a [Idx], eind: &'a [Idx]) -> Mesh<'a> {
+    pub unsafe fn new_unchecked(
+        nn: Idx,
+        nparts: Idx,
+        eptr: &'a [Idx],
+        eind: &'a [Idx],
+    ) -> Mesh<'a> {
         assert!(0 < nn, "nn must be strictly greater than zero");
-        assert!(0 < nparts, "nn must be strictly greater than zero");
+        assert!(0 < nparts, "nparts must be strictly greater than zero");
         let _ = Idx::try_from(eptr.len()).expect("eptr array larger than Idx::MAX");
         assert_ne!(eptr.len(), 0);
         let eind_len = Idx::try_from(eind.len()).expect("eind array larger than Idx::MAX");
@@ -610,19 +976,10 @@ impl<'a> Mesh<'a> {
     /// not all are applicable to a given partitioning method.  Refer to the
     /// documentation of METIS ([link]) for more info on this.
     ///
-    /// Note that setting METIS_OPTION_NUMBERING to 1 is unsupported for safety
-    /// reasons.
-    ///
     /// See [`Graph::set_options`] for a usage example.
     ///
     /// [link]: http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf
     pub fn set_options(mut self, options: &[Idx; NOPTIONS]) -> Mesh<'a> {
-        // Make sure Fortran numbering is not set in the options, as that will change the input data.
-        // Panic for now, until there are appropriate checked and unchecked versions of the API
-        if options[m::moptions_et_METIS_OPTION_NUMBERING as usize] == 1 {
-            panic!("Changing the numbering scheme for METIS is unsupported");
-        }
-
         self.options.copy_from_slice(options);
         self
     }
@@ -658,7 +1015,8 @@ impl<'a> Mesh<'a> {
     ///
     /// This function panics if the length of `epart` is not the number of
     /// elements, or if `nparts`'s is not the number of nodes.
-    pub fn part_dual(self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
+    pub fn part_dual(mut self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
+        self.options[option::Numbering::INDEX] = option::Numbering::C.value();
         let epart_len = Idx::try_from(epart.len()).expect("epart array larger than Idx::MAX");
         assert_eq!(
             epart_len,
@@ -670,6 +1028,13 @@ impl<'a> Mesh<'a> {
             npart_len, self.nn,
             "npart.len() must be equal to the number of nodes",
         );
+
+        if self.nparts == 1 {
+            // METIS does not handle this case well.
+            epart.fill(0);
+            npart.fill(0);
+            return Ok(0);
+        }
 
         let ne = self.eptr.len() as Idx - 1;
         let mut edgecut = mem::MaybeUninit::uninit();
@@ -710,7 +1075,8 @@ impl<'a> Mesh<'a> {
     ///
     /// This function panics if the length of `epart` is not the number of
     /// elements, or if `nparts`'s is not the number of nodes.
-    pub fn part_nodal(self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
+    pub fn part_nodal(mut self, epart: &mut [Idx], npart: &mut [Idx]) -> Result<Idx> {
+        self.options[option::Numbering::INDEX] = option::Numbering::C.value();
         let epart_len = Idx::try_from(epart.len()).expect("epart array larger than Idx::MAX");
         assert_eq!(
             epart_len,
@@ -722,6 +1088,13 @@ impl<'a> Mesh<'a> {
             npart_len, self.nn,
             "npart.len() must be equal to the number of nodes",
         );
+
+        if self.nparts == 1 {
+            // METIS does not handle this case well.
+            epart.fill(0);
+            npart.fill(0);
+            return Ok(0);
+        }
 
         let ne = self.eptr.len() as Idx - 1;
         let mut edgecut = mem::MaybeUninit::uninit();
@@ -786,25 +1159,15 @@ impl Drop for Dual {
 
 /// Generate the dual graph of a mesh.
 ///
-/// # Panics
+/// # Errors
 ///
-/// This function panics if:
-///
-/// - `eptr` is empty, or
-/// - `eptr`'s length doesn't fit in [`Idx`].
-pub fn mesh_to_dual(
-    nn: Idx,
-    eptr: &[Idx],
-    eind: &[Idx],
-    ncommon: Idx,
-    numflag: Idx,
-) -> Result<Dual> {
-    let eptr_len = Idx::try_from(eptr.len()).expect("eptr array larger than Idx::MAX");
-    assert_ne!(eptr_len, 0, "eptr cannot be empty");
-
-    let ne = eptr_len - 1;
+/// This function returns an error if `eptr` and `eind` don't follow the mesh
+/// format given in [`Mesh::new`].
+pub fn mesh_to_dual(eptr: &[Idx], eind: &[Idx], ncommon: Idx) -> Result<Dual> {
+    let (ne, nn) = check_mesh_structure(&*eptr, &*eind)?;
     let mut xadj = mem::MaybeUninit::uninit();
     let mut adjncy = mem::MaybeUninit::uninit();
+    let numbering_flag = 0;
 
     // SAFETY: METIS_MeshToDual allocates the xadj and adjncy arrays.
     // SAFETY: hopefully those arrays are of correct length.
@@ -815,7 +1178,7 @@ pub fn mesh_to_dual(
             slice_to_mut_ptr(eptr),
             slice_to_mut_ptr(eind),
             &ncommon as *const Idx as *mut Idx,
-            &numflag as *const Idx as *mut Idx,
+            &numbering_flag as *const Idx as *mut Idx,
             xadj.as_mut_ptr(),
             adjncy.as_mut_ptr(),
         )
