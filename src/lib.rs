@@ -152,7 +152,7 @@ unsafe fn slice_to_mut_ptr<T>(slice: &[T]) -> *mut T {
     slice.as_ptr() as *mut T
 }
 
-/// Builder structure to setup a graph partition computation.
+/// Builder structure to set up a graph partition computation.
 ///
 /// This structure holds the required arguments for METIS to compute a
 /// partition.  It also offers methods to easily set any optional argument.
@@ -284,7 +284,7 @@ impl<'a> Graph<'a> {
     /// The following invariants must be held, otherwise this function returns
     /// an error:
     ///
-    /// - all of the arrays have a length that can be held by an [`Idx`],
+    /// - all the arrays have a length that can be held by an [`Idx`],
     /// - `ncon` is strictly greater than zero,
     /// - `nparts` is strictly greater than zero,
     /// - `xadj` has at least one element (its length is the one more than the
@@ -375,7 +375,7 @@ impl<'a> Graph<'a> {
     /// - `ncon` is not strictly greater than zero, or
     /// - `nparts` is not strictly greater than zero, or
     /// - `xadj` is empty, or
-    /// - the length of `adjncy` is different than the last element of `xadj`.
+    /// - the length of `adjncy` is different from the last element of `xadj`.
     ///
     /// # Mutability
     ///
@@ -411,7 +411,7 @@ impl<'a> Graph<'a> {
 
     /// Sets the computational weights of the vertices.
     ///
-    /// By default all vertices have the same weight.
+    /// By default, all vertices have the same weight.
     ///
     /// The `ncon` weights of the `i`th vertex must be located in
     /// `vwgt[i*ncon..(i+1)*ncon]`, and all elements of `vwgt` must be positive.
@@ -429,7 +429,7 @@ impl<'a> Graph<'a> {
 
     /// Sets the communication weights of the vertices.
     ///
-    /// By default all vertices have the same communication weight.
+    /// By default, all vertices have the same communication weight.
     ///
     /// Vertices can only have one communication weight. The length of `vsize`
     /// does not depend on `ncon`.
@@ -447,7 +447,7 @@ impl<'a> Graph<'a> {
 
     /// Sets the weights of the edges.
     ///
-    /// By default all edges have the same weight.
+    /// By default, all edges have the same weight.
     ///
     /// All elements of `adjwgt` must be positive.
     ///
@@ -464,7 +464,7 @@ impl<'a> Graph<'a> {
 
     /// Sets the target partition weights for each part and constraint.
     ///
-    /// By default the graph is divided equally.
+    /// By default, the graph is divided equally.
     ///
     /// The target partition weight for the `i`th part and `j`th constraint is
     /// specified at `tpwgts[i*ncon+j]`. For each constraint `j`, the sum of the
@@ -484,7 +484,7 @@ impl<'a> Graph<'a> {
 
     /// Sets the load imbalance tolerance for each constraint.
     ///
-    /// By default it equals to 1.001 if `ncon` equals 1 and 1.01 otherwise.
+    /// By default, it equals to 1.001 if `ncon` equals 1 and 1.01 otherwise.
     ///
     /// For the `i`th partition and `j`th constraint the allowed weight is the
     /// `ubvec[j]*tpwgts[i*ncon+j]` fraction of the `j`th's constraint total
@@ -779,7 +779,7 @@ fn check_mesh_structure(eptr: &[Idx], eind: &[Idx]) -> StdResult<(Idx, Idx), New
     Ok((ne, max_node + 1))
 }
 
-/// Builder structure to setup a mesh partition computation.
+/// Builder structure to set up a mesh partition computation.
 ///
 /// This structure holds the required arguments for METIS to compute a
 /// partition.  It also offers methods to easily set any optional argument.
@@ -886,7 +886,7 @@ impl<'a> Mesh<'a> {
     /// - `nn` is not strictly greater than zero, or
     /// - `nparts` is not strictly greater than zero, or
     /// - `eptr` is empty, or
-    /// - the length of `eind` is different than the last element of `eptr`.
+    /// - the length of `eind` is different from the last element of `eptr`.
     ///
     /// # Mutability
     ///
@@ -921,7 +921,7 @@ impl<'a> Mesh<'a> {
 
     /// Sets the computational weights of the elements.
     ///
-    /// By default all elements have the same weight.
+    /// By default, all elements have the same weight.
     ///
     /// All elements of `vwgt` must be positive.
     ///
@@ -938,7 +938,7 @@ impl<'a> Mesh<'a> {
 
     /// Sets the communication weights of the elements.
     ///
-    /// By default all elements have the same communication weight.
+    /// By default, all elements have the same communication weight.
     ///
     /// # Panics
     ///
@@ -953,7 +953,7 @@ impl<'a> Mesh<'a> {
 
     /// Sets the target partition weights for each part.
     ///
-    /// By default the mesh is divided equally.
+    /// By default, the mesh is divided equally.
     ///
     /// The sum of the target partition weights must be 1.0.
     ///
