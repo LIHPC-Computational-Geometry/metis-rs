@@ -30,7 +30,7 @@ pub trait Opt: private::Sealed {
 
 /// Specifies the partitioning method.
 pub enum PType {
-    /// Multilevel recursive bisectioning.
+    /// Multilevel recursive bisection.
     Rb,
 
     /// Multilevel k-way partitioning.
@@ -149,8 +149,8 @@ impl Opt for RType {
     }
 }
 
-/// Specifies the number of different partitionings that it will compute. The
-/// final partitioning is the one that achieves the best edgecut or
+/// Specifies the number of different partitions that it will compute. The
+/// final partition is the one that achieves the best edge cut or
 /// communication volume. Default is 1.
 pub struct NCuts(pub Idx);
 
@@ -244,7 +244,7 @@ impl Opt for MinConn {
     }
 }
 
-/// Specifies that the coarsening will not perform any 2-hop matchings when the
+/// Specifies that the coarsening will not perform any 2-hop matching when the
 /// standards matching approach fails to sufficiently coarsen the graph.
 ///
 /// The 2-hop matching is very effective for graphs with power-law degree
@@ -275,7 +275,7 @@ impl Opt for Contig {
     }
 }
 
-/// Specifies that the graph should be compressed by combining together vertices
+/// Specifies that the graph should be compressed by combining vertices
 /// that have identical adjacency lists.
 pub struct Compress(pub bool);
 
@@ -307,14 +307,14 @@ impl Opt for CCOrder {
 /// than `0.1*x*(average degree)` are removed from the graph, an ordering of the
 /// rest of the vertices is computed, and an overall ordering is computed by
 /// ordering the removed vertices at the end of the overall ordering.  For
-/// example if `x == 40`, and the average degree is 5, then the algorithmwill
+/// example if `x == 40`, and the average degree is 5, then the algorithm will
 /// remove all vertices with degree greater than 20. The vertices that are
 /// removed are ordered last (i.e., they are automatically placed in the
 /// top-level separator). Good values are often in the range of 60 to 200 (i.e.,
 /// 6 to 20 times more than the average). Default value is 0, indicating that no
 /// vertices are removed.
 ///
-/// Used to control whether or not the ordering algorithm should remove any
+/// Used to control whether the ordering algorithm should remove any
 /// vertices with high degree (i.e., dense columns). This is particularly
 /// helpful for certain classes of LP matrices, in which there a few vertices
 /// that are connected to many other vertices. By removing these vertices prior
@@ -335,7 +335,7 @@ impl Opt for PFactor {
 ///
 /// A value of `x` indicates that the allowed load imbalance is `(1 + x)/1000`.
 /// The load imbalance for the `j`th constraint is defined to be
-/// `max_i(w[j,i])/t[j,i])`, where `w[j,i]` is the fraction of the overall
+/// `max_i(w[j,i]/t[j,i])`, where `w[j,i]` is the fraction of the overall
 /// weight of the `j`th constraint that is assigned to the`i`th partition and
 /// `t[j,i]` is the desired target weight of the `j`th constraint for the `i`th
 /// partition (i.e., that specified via `-tpwgts`). For `-ptype=rb`, the default
