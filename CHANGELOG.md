@@ -1,7 +1,7 @@
 # Changelog
 
-## Unreleased
-[metis-sys-0.2.1...HEAD](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-sys-0.2.1...HEAD)
+## Version 0.2.0 (2024-03-06)
+[metis-sys-0.2.1...HEAD](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-0.1.2...metis-0.2.0)
 
 ### Added
 
@@ -27,27 +27,3 @@ Thanks to all contributors to this release:
 - @gfaster
 - @hhirtz
 - @oisyn
-
-## Version 0.2.1
-
-[metis-sys-0.2.0...metis-sys-0.2.1](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-sys-0.2.0...metis-sys-0.2.1)
-
-## Changed
-
-- Link to libclang at runtime [#7](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/7)
-- Update to bindgen 0.66 [#7](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/7)
-
-## Version 0.2.0
-
-[metis-sys-0.1.0...metis-sys-0.2.0](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-sys-0.1.0...metis-sys-0.2.0)
-
-## Breaking change
-
-- Only METIS-related functions are now exposed. For access to other functions, use the `libc` crate. If a METIS function you were using has been mistakenly removed, please file a [bug report]. Thank you!
-
-## Other changes
-
-- Update `bindgen` to v0.65
-- Update to rust edition 2021
-
-[bug report]: https://github.com/LIHPC-Computational-Geometry/metis-rs/issues
