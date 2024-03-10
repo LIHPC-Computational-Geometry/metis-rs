@@ -12,7 +12,7 @@ fn build_lib() {
     use std::env;
     use std::path::PathBuf;
 
-    let vendor = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("./vendor");
+    let vendor = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("vendor");
     println!("cargo:rerun-if-changed={}", vendor.display());
 
     let mut build = cc::Build::new();
