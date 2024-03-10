@@ -330,14 +330,14 @@ impl<'a> Graph<'a> {
         };
 
         let mut prev = 0;
-        for x in &*xadj {
+        for x in xadj {
             if prev > *x {
                 return Err(NewGraphError::msg("index list is not sorted"));
             }
             prev = *x;
         }
 
-        for a in &*adjncy {
+        for a in adjncy {
             if *a < 0 || *a >= nvtxs {
                 return Err(NewGraphError::msg(
                     "some values in the adjacency list are out of bounds",
@@ -859,7 +859,7 @@ impl<'a> Mesh<'a> {
         if nparts <= 0 {
             return Err(NewMeshError::NoParts);
         }
-        let (_ne, nn) = check_mesh_structure(&*eptr, &*eind)?;
+        let (_ne, nn) = check_mesh_structure(eptr, eind)?;
         Ok(unsafe { Mesh::new_unchecked(nn, nparts, eptr, eind) })
     }
 
@@ -1164,7 +1164,7 @@ impl Drop for Dual {
 /// This function returns an error if `eptr` and `eind` don't follow the mesh
 /// format given in [`Mesh::new`].
 pub fn mesh_to_dual(eptr: &[Idx], eind: &[Idx], ncommon: Idx) -> Result<Dual> {
-    let (ne, nn) = check_mesh_structure(&*eptr, &*eind)?;
+    let (ne, nn) = check_mesh_structure(eptr, eind)?;
     let mut xadj = mem::MaybeUninit::uninit();
     let mut adjncy = mem::MaybeUninit::uninit();
     let numbering_flag = 0;
