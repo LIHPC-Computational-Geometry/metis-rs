@@ -1,0 +1,36 @@
+name: Multiple OS
+# Test the default configuration on multiple operating systems
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build_matrix:
+    name: Run tests for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        name: [linux, windows, macos]
+        include:
+          - name: linux
+            os: ubuntu-latest
+          - name: windows
+            os: windows-latest
+          - name: macos
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Run Check
+        run: cargo check
+      - name: Run Clippy
+        run: cargo clippy
+      - name: Run Tests
+        run: cargo test --all
