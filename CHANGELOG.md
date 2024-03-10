@@ -4,6 +4,11 @@
 
 [metis-sys-0.2.0...0.2.1](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-0.2.0...metis-0.2.1)
 
+### Added
+
+- `force-optimize-vendor` feature for `metis-sys` to force builtin metis to be compiled as optimized, even for debug or
+  dev profiles [#31](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/31)
+
 ### Fixed
 
 - move `vendor` library in `metis-sys` [#29](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/29)
@@ -14,14 +19,17 @@
 
 ### Added
 
-- Builtin metis with the new `vendored` feature, enabled by default [#16](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/16)
+- Builtin metis with the new `vendored` feature, enabled by
+  default [#16](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/16)
 - Convert from sprs matrices [#10](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/10)
 - Add unchecked constructors [#13](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/13)
 
 ### Changed
 
-- Remove mutability requirement on input from public facing API [#18](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/18)
-- Remove numbering feature, now only Rust (or C) 0-based arrays are supported [#13](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/13)
+- Remove mutability requirement on input from public facing
+  API [#18](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/18)
+- Remove numbering feature, now only Rust (or C) 0-based arrays are
+  supported [#13](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/13)
 
 ### Documentation
 
