@@ -1,7 +1,16 @@
 # Changelog
 
+## Version 0.2.1 (2024-03-10)
+
+[metis-sys-0.2.0...0.2.1](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-0.2.0...metis-0.2.1)
+
+### Fixed
+
+- move `vendor` library in `metis-sys` [#29](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/29)
+
 ## Version 0.2.0 (2024-03-06)
-[metis-sys-0.2.1...HEAD](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-0.1.2...metis-0.2.0)
+
+[metis-sys-0.1.2...0.2.0](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-0.1.2...metis-0.2.0)
 
 ### Added
 

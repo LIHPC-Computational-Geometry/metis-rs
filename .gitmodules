@@ -1,6 +1,6 @@
 [submodule "vendor/GKlib"]
-	path = vendor/GKlib
+	path = metis-sys/vendor/GKlib
 	url = https://github.com/KarypisLab/GKlib
 [submodule "vendor/metis"]
-	path = vendor/metis
+	path = metis-sys/vendor/metis
 	url = https://github.com/KarypisLab/METIS
