@@ -12,7 +12,7 @@ keywords = ["graph", "mesh", "matrix", "partitioning", "ordering"]
 
 
 [features]
-default = ["vendored"]
+default = ["vendored", "force-optimize-vendor"]
 
 # Build and statically link to METIS and GKLib.
 vendored = ["dep:cc"]
@@ -23,6 +23,10 @@ use-system = ["bindgen"]
 # Regenerate bindings in metis-sys/gen/bindings.rs from METIS in the "vendor"
 # directory. Also enables "vendored".
 generate-bindings = ["vendored", "bindgen"]
+
+# Force Metis to be optimized and to not follow the current profile for Rust
+# Therefore, debug or dev build lead to correct performance.
+force-optimize-vendor = ["vendored"]
 
 [build-dependencies]
 bindgen = { version = "0.69", default-features = false, features = ["runtime"], optional = true }
