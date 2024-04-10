@@ -129,9 +129,6 @@ fn build_lib() {
     #[cfg(any(not(debug_assertions), feature = "force-optimize-vendor"))]
     build.define("NDEBUG", None).define("NDEBUG2", None);
 
-    #[cfg(feature = "force-optimize-vendor")]
-    build.no_default_flags(true).opt_level(3).debug(false);
-
     // METIS triggers an infinite amount of warnings and showing them to users
     // downstream does not really help.
     build.warnings(false);
