@@ -54,12 +54,13 @@ cargo doc --no-deps --open
 
 ## License
 
-metis-rs is distributed under the terms of both the MIT license and the Apache License (Version 2.0). Refer to `LICENSE-APACHE` and `LICENSE-MIT` for more details.
-
-> [!WARNING]
+> [!IMPORTANT]
 > Our licensing policy applies only to the rust crate `metis-rs`, not the original METIS library.
 >
 > For information about METIS' licensing policy, refer to the original library's [repository][METIS_GH].
+
+metis-rs is distributed under the terms of both the MIT license and the Apache License (Version 2.0). Refer to `LICENSE-APACHE` and `LICENSE-MIT` for more details.
+
 
 [METIS]: http://glaros.dtc.umn.edu/gkhome/metis/metis/overview
 [METIS_GH]: https://github.com/KarypisLab/METIS
