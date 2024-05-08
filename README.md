@@ -61,15 +61,11 @@ cargo doc --no-deps --open
 
 metis-rs is distributed under the terms of both the MIT license and the Apache License (Version 2.0). Refer to `LICENSE-APACHE` and `LICENSE-MIT` for more details.
 
-### Note on `cargo-vendor` usage
+### Note on the `vendored` feature
 
-Because the project uses `cargo-vendor` and submodules, the original METIS code may be distributed along metis-rs. 
-This does not invalidate any of the above statements as the METIS version shipped with `cargo-vendor` has a compatible 
-licensing policy.
-
-Were METIS' license to change and make this impossible, the version shipped with metis-rs would be fixed; Any further 
-licensing issues would have to be handled by users, as they are when users provide their own original library to use 
-with bindings.
+metis-rs comes with its `vendored` feature enabled by default. With this feature enabled, the original METIS code is distributed along metis-rs.
+In this case, we do not guarantee that all of the compiled code is license-able under the same terms as ours since we do not control the original 
+library's license policy.
 
 [METIS]: http://glaros.dtc.umn.edu/gkhome/metis/metis/overview
 [METIS_GH]: https://github.com/KarypisLab/METIS
