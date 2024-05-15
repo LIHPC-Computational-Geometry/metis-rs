@@ -54,6 +54,17 @@ cargo doc --no-deps --open
 
 ## License
 
+> [!IMPORTANT]
+> Our licensing policy applies only to the rust crate `metis-rs`, not the original METIS library.
+>
+> For information about METIS' licensing policy, refer to the original library's [repository][METIS_GH].
+
 metis-rs is distributed under the terms of both the MIT license and the Apache License (Version 2.0). Refer to `LICENSE-APACHE` and `LICENSE-MIT` for more details.
 
+### Note on the `vendored` feature
+
+metis-rs comes with its `vendored` feature enabled by default. With this feature enabled, the original METIS code is compiled and is installed along metis-rs.
+Please note that METIS code is **always** under Apache-2 license.
+
 [METIS]: http://glaros.dtc.umn.edu/gkhome/metis/metis/overview
+[METIS_GH]: https://github.com/KarypisLab/METIS
