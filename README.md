@@ -63,9 +63,8 @@ metis-rs is distributed under the terms of both the MIT license and the Apache L
 
 ### Note on the `vendored` feature
 
-metis-rs comes with its `vendored` feature enabled by default. With this feature enabled, the original METIS code is distributed along metis-rs.
-In this case, we do not guarantee that all of the compiled code is license-able under the same terms as ours since we do not control the original 
-library's license policy.
+metis-rs comes with its `vendored` feature enabled by default. With this feature enabled, the original METIS code is compiled and is installed along metis-rs.
+Please note that METIS code is **always** under Apache-2 license.
 
 [METIS]: http://glaros.dtc.umn.edu/gkhome/metis/metis/overview
 [METIS_GH]: https://github.com/KarypisLab/METIS
