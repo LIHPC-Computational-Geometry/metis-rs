@@ -1,6 +1,6 @@
 # metis-rs
 
-**metis-rs** is a Rust library providing idiomatic bindings to [libmetis][METIS], a library for graph and mesh
+**metis-rs** is a Rust library providing idiomatic bindings to [libmetis][METIS_GH], a library for graph and mesh
 partitioning. It is made to be used with Rust version 1.67.0 or above.
 
 ## Getting Started
