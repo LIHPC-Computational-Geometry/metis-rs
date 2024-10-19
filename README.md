@@ -5,11 +5,11 @@ partitioning. It is made to be used with Rust version 1.67.0 or above.
 
 ## Getting Started
 
-Library released on [crates.io](https://crates.io/crates/metis-rs). To use it, add the following to your `Cargo.toml`:
+Library released on [crates.io](https://crates.io/crates/metis). To use it, add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-metis-rs = "0.2"
+metis = "0.2"
 ```
 
 The list of available versions and a change log are available in the [CHANGELOG.md](CHANGELOG.md) file.
