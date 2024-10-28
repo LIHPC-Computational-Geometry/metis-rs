@@ -1,5 +1,27 @@
 # Changelog
 
+## Version 0.2.2 (2024-10-28)
+
+[metis-sys-0.2.1...0.2.2](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-0.2.0...metis-0.2.1)
+
+### Fixed
+
+- Do not override compiler flags when `force-optimize-vendor`  [#33](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/33)
+
+
+### Documentation
+
+- Fix links in the README.md  [#34](https://github.com/LIHPC-Computational-Geometry/metis-rs/pull/34)
+
+
+### Contributors
+
+Thanks to all contributors to this release:
+- @cedricchevalier19
+- @Firestar9
+- @imrn99
+- @JMS55
+
 ## Version 0.2.1 (2024-03-10)
 
 [metis-sys-0.2.0...0.2.1](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-0.2.0...metis-0.2.1)
