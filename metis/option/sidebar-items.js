@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CType","IpType","ObjType","PType","RType"],"struct":["CCOrder","Compress","Contig","DbgLvl","MinConn","NCuts","NIter","NSeps","No2Hop","PFactor","Seed","UFactor"],"trait":["Opt"]};
