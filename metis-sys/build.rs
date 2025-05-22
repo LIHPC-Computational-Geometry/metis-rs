@@ -21,6 +21,13 @@ fn build_lib() {
         .define("REALTYPEWIDTH", Some(REAL_SIZE.to_string().as_str()))
         .include(vendor.join("metis/include"));
 
+    // Starting with clang-16 GKlib fails to compile with an implicit
+    // function declaration error. Just disable the error for it.
+    let compiler = build.get_compiler();
+    if compiler.is_like_clang() || compiler.is_like_clang_cl() {
+        build.flag("-Wno-implicit-function-declaration");
+    }
+
     fn add_sources(build: &mut cc::Build, root: PathBuf, files: &[&str]) {
         build.files(files.iter().map(|src| root.join(src)));
         build.include(root);
