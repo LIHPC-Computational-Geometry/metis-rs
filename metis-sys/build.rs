@@ -129,6 +129,15 @@ fn build_lib() {
     #[cfg(any(not(debug_assertions), feature = "force-optimize-vendor"))]
     build.define("NDEBUG", None).define("NDEBUG2", None);
 
+    // Make partitions independent of the platform for a given seed. Without USE_GKRAND, GKlib uses
+    // the C library's rand(), whose sequence differs between platforms. Floating-point contraction
+    // into fused multiply-add instructions depends on the target and compiler, and changes the
+    // results of METIS' balance computations. MSVC does not contract by default and does not know
+    // the flag.
+    build
+        .define("USE_GKRAND", None)
+        .flag_if_supported("-ffp-contract=off");
+
     // METIS triggers an infinite amount of warnings and showing them to users
     // downstream does not really help.
     build.warnings(false);

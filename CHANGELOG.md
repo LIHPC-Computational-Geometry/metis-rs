@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- With the `vendored` feature, a given seed yields the same partition on every platform. METIS is built with GKlib's
+  own random number generator instead of the C library's `rand()`, and without floating-point contraction. Partitions
+  computed with a given seed therefore differ from those of earlier versions.
+
 ## Version 0.2.2 (2024-10-28)
 
 [metis-sys-0.2.1...0.2.2](https://github.com/LIHPC-Computational-Geometry/metis-rs/compare/metis-0.2.0...metis-0.2.1)

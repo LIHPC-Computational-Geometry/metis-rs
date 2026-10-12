@@ -66,5 +66,9 @@ metis-rs is distributed under the terms of both the MIT license and the Apache L
 metis-rs comes with its `vendored` feature enabled by default. With this feature enabled, the original METIS code is compiled and is installed along metis-rs.
 Please note that METIS code is **always** under Apache-2 license.
 
+The vendored METIS uses GKlib's own random number generator and is compiled without floating-point contraction. Hence,
+a given seed (see `option::Seed`) yields the same partition on every platform. The random number generator's state is
+shared by the whole process, so partitions are only reproducible if METIS is not called concurrently.
+
 [METIS]: http://glaros.dtc.umn.edu/gkhome/metis/metis/overview
 [METIS_GH]: https://github.com/KarypisLab/METIS
